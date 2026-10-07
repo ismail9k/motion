@@ -1,0 +1,4 @@
+# Film and montage projects: renders, footage, node_modules
+films/
+node_modules/
+.DS_Store
