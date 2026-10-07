@@ -1,5 +1,12 @@
 // Small ffmpeg helpers shared by the pipeline scripts.
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
+
+// Runs ffmpeg with an argument list (no shell, so file names are never parsed as code) and returns its log.
+export function ffLog(args) {
+  const r = spawnSync('ffmpeg', ['-hide_banner', '-nostats', ...args], { encoding: 'utf8', maxBuffer: 1 << 28 });
+  if (r.error) throw r.error;
+  return (r.stdout || '') + (r.stderr || '');
+}
 
 export const duration = (file) =>
   +execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file], { encoding: 'utf8' });
@@ -7,7 +14,7 @@ export const duration = (file) =>
 // Silent intervals [[s, e], …] measured from the audio itself. The cut trusts these, never word gaps:
 // whisper sometimes skips whole sentences, and a gap in the words is then real speech.
 export function silences(file, db = -35, min = 0.2) {
-  const log = execFileSync('sh', ['-c', `ffmpeg -hide_banner -nostats -i "${file}" -af silencedetect=n=${db}dB:d=${min} -f null - 2>&1`], { encoding: 'utf8', maxBuffer: 1 << 26 });
+  const log = ffLog(['-i', file, '-af', `silencedetect=n=${+db}dB:d=${+min}`, '-f', 'null', '-']);
   const res = []; let s = null;
   for (const line of log.split('\n')) {
     const a = line.match(/silence_start: (-?[\d.]+)/), b = line.match(/silence_end: ([\d.]+)/);

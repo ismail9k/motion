@@ -7,7 +7,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from 
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { sheet } from '../lib/sheet.mjs';
-import { silences, silentShare } from '../lib/media.mjs';
+import { silences, silentShare, ffLog } from '../lib/media.mjs';
 
 const argv = process.argv;
 const arg = (k, d) => { const i = argv.indexOf('--' + k); return i > 0 && argv[i + 1] ? argv[i + 1] : d; };
@@ -97,8 +97,8 @@ if (repaired.length) console.log(`re-transcribed ${repaired.length} region(s) wh
 writeFileSync('work/words.json', JSON.stringify(words));
 
 // ---- cuts already in the source (a rough cut has its own jump cuts): the camera alternates on these too
-const sceneLog = sh('sh', ['-c', `ffmpeg -hide_banner -nostats -i "${SRC}" -vf "scale=180:-2,select='gt(scene,${cfg.sceneThreshold ?? 0.22})',showinfo" -an -f null - 2>&1 | grep -o 'pts_time:[0-9.]*' || true`]);
-const scenes = sceneLog.split('\n').map((l) => +l.split(':')[1]).filter((t) => t > 0.3 && t < probe.duration - 0.3).map((t) => +t.toFixed(3));
+const sceneLog = ffLog(['-i', SRC, '-vf', `scale=180:-2,select='gt(scene,${+(cfg.sceneThreshold ?? 0.22)})',showinfo`, '-an', '-f', 'null', '-']);
+const scenes = (sceneLog.match(/pts_time:[0-9.]+/g) || []).map((l) => +l.split(':')[1]).filter((t) => t > 0.3 && t < probe.duration - 0.3).map((t) => +t.toFixed(3));
 writeFileSync('work/scenes.json', JSON.stringify(scenes));
 
 // ---- pauses and retakes ---------------------------------------------------------

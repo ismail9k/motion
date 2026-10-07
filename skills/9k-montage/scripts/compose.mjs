@@ -11,6 +11,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { events, cameraFilter } from '../lib/camera.mjs';
+import { ffLog } from '../lib/media.mjs';
 
 const argv = process.argv;
 const arg = (k, d) => { const i = argv.indexOf('--' + k); return i > 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d; };
@@ -59,7 +60,7 @@ if (A.music?.src) {
 af.push(`${mixIn.join('')}amix=inputs=${mixIn.length}:normalize=0:duration=first,alimiter=limit=0.89:level=disabled[mix]`);
 writeFileSync('work/audio.graph', af.join(';\n'));
 ff([...ain, '-/filter_complex', 'work/audio.graph', '-map', '[mix]', '-t', String(DUR), '-c:a', 'pcm_s16le', 'work/mix.wav']);
-const L = JSON.parse(execFileSync('sh', ['-c', `ffmpeg -hide_banner -i work/mix.wav -af loudnorm=I=${A.lufs}:TP=-1.5:LRA=11:print_format=json -f null - 2>&1 | sed -n '/^{/,/^}/p'`], { encoding: 'utf8' }));
+const L = JSON.parse(ffLog(['-i', 'work/mix.wav', '-af', `loudnorm=I=${+A.lufs}:TP=-1.5:LRA=11:print_format=json`, '-f', 'null', '-']).match(/^\{[\s\S]*?^\}/m)[0]);
 const loud = `loudnorm=I=${A.lufs}:TP=-1.5:LRA=11:measured_I=${L.input_i}:measured_TP=${L.input_tp}:measured_LRA=${L.input_lra}:measured_thresh=${L.input_thresh}:offset=${L.target_offset}:linear=true,aresample=48000`;
 
 // ---- 3. picture: camera → grade → b-roll → overlay ----------------------------------------------------
@@ -80,5 +81,5 @@ ff([...vin, '-/filter_complex', 'work/video.graph', '-map', '[vout]', '-map', '[
   ...(FROM ? ['-ss', String(FROM)] : []), '-t', String(TO - FROM), '-r', String(F.fps),
   '-c:v', 'libx264', '-preset', HALF ? 'veryfast' : 'medium', '-crf', HALF ? '24' : '18', '-pix_fmt', 'yuv420p',
   '-c:a', 'aac', '-b:a', '256k', '-movflags', '+faststart', OUT]);
-const r128 = execFileSync('sh', ['-c', `ffmpeg -hide_banner -i "${OUT}" -af ebur128=peak=true -f null - 2>&1 | grep -E "I:|Peak:" | tail -2`], { encoding: 'utf8' }).replace(/\s+/g, ' ').trim();
+const r128 = ffLog(['-i', OUT, '-af', 'ebur128=peak=true', '-f', 'null', '-']).split('\n').filter((l) => /I:|Peak:/.test(l)).slice(-2).join(' ').replace(/\s+/g, ' ').trim();
 console.log(`→ ${OUT} · ${r128}`);
