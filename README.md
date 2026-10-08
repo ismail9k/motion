@@ -9,6 +9,12 @@ Two agent skills for 9k video: motion graphics from a brief, and full edits of y
 
 Every frame is styled from the 9k brand: colors, type, the Ismail9k → 9k wordmark, Nino. Install it to make 9k content, not as a general-purpose motion kit.
 
+## Guides
+
+1. **[Install](docs/install.md)**: tools, the skills, model setup, and a first test
+2. **[Finding references on whatships.com](docs/references.md)**: pick a launch film to borrow pacing and transitions from, and hand it to the skill
+3. **[The course behind the skill](docs/course.md)**: the Movez article this is built on, and where each of its 12 steps lives in the skill
+
 ## Install
 
 With the [Skills CLI](https://github.com/vercel-labs/skills), for Claude Code, Codex and other agents:
@@ -17,7 +23,7 @@ With the [Skills CLI](https://github.com/vercel-labs/skills), for Claude Code, C
 npx skills add ismail9k/motion
 ```
 
-Install both skills: `9k-montage` copies its engine and brand files from the sibling `9k-motion` skill.
+Install both skills: `9k-montage` copies its engine and brand files from the sibling `9k-motion` skill. The [install guide](docs/install.md) covers the tools, the whisper model and troubleshooting.
 
 To hack on the skills, clone the repo and link them, so edits take effect immediately:
 
