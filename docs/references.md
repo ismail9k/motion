@@ -15,7 +15,7 @@ The skill splits the work clearly:
 | How text enters and exits | Shapes, radii, shadows |
 | Composition and rhythm | Easing (springs) |
 
-So pick references for **how they move**, not how they look. A film with the wrong colors is fine; the skill restates everything in 9k tokens. It takes the grammar of a reference, never its content, logos or characters.
+So pick references for **how they move**, not how they look ([what 9k sets](identity.md)). A film with the wrong colors is fine; the skill restates everything in 9k tokens. It takes the grammar of a reference, never its content, logos or characters.
 
 ## Find one
 

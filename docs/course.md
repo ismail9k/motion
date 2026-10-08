@@ -25,7 +25,7 @@ You don't need to do any of these by hand. This table shows where each one lives
 
 ## What the skill adds
 
-- **One brand.** The course leaves look and color to you. This skill takes every color, font, radius and easing from the 9k design system, and references only set pacing and camera.
+- **One brand.** The course leaves look and color to you. This skill takes every color, font, radius and easing from the [9k identity](identity.md), and references only set pacing and camera.
 - **A questionnaire.** Three short rounds replace the long prompt. You answer, it writes the brief.
 - **9k-montage.** The course covers films made from scratch. 9k-montage applies the same engine to editing your own footage: cuts, captions, graphics timed to your words, and sound.
 
@@ -36,4 +36,4 @@ You don't need to do any of these by hand. This table shows where each one lives
 - **Part 4 (10–12)** matters for long or flagship films, and if you want to build a skill of your own.
 - The end of the article links the repos and prompt libraries it draws on. They're worth browsing for references and techniques.
 
-Back: [Install](install.md) · [Finding references](references.md)
+Back: [Install](install.md) · [Finding references](references.md) · [The 9k identity](identity.md)

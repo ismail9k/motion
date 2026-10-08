@@ -7,13 +7,16 @@ Two agent skills for 9k video: motion graphics from a brief, and full edits of y
 | [`9k-motion`](skills/9k-motion/SKILL.md) | A brief: segment, promo, title card, end card | A motion film built from code. It starts with a questionnaire and asks for references |
 | [`9k-montage`](skills/9k-montage/SKILL.md) | **A video of you**: raw takes or a rough cut | The edited montage: tightened cut, jump-cut punch-ins, word-by-word Arabic/English captions, 9k graphics timed to the words, SFX, −14 LUFS, end card. There is one plan gate and no questionnaire |
 
-Every frame is styled from the 9k brand: colors, type, the Ismail9k → 9k wordmark, Nino. Install it to make 9k content, not as a general-purpose motion kit.
+Every frame is styled from the [9k identity](docs/identity.md): colors, type, the Ismail9k → 9k wordmark, Nino. Install it to make 9k content, not as a general-purpose motion kit.
+
+![The sample film that ships with 9k-motion](docs/img/identity/sample-film.gif)
 
 ## Guides
 
 1. **[Install](docs/install.md)**: tools, the skills, model setup, and a first test
 2. **[Finding references on whatships.com](docs/references.md)**: pick a launch film to borrow pacing and transitions from, and hand it to the skill
 3. **[The course behind the skill](docs/course.md)**: the Movez article this is built on, and where each of its 12 steps lives in the skill
+4. **[The 9k identity](docs/identity.md)**: the colors, type, wordmark, Nino and motion language every film is styled from
 
 ## Install
 
