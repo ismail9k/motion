@@ -1,0 +1,12 @@
+{
+  "name": "arabic-tech-content",
+  "description": "Write Arabic short-form tech scripts for Reels, TikTok, YouTube Shorts and LinkedIn: hook, explanation, CTA, description and hashtags, with platform versions and angle variants. Egyptian Arabic mixed with MSA.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ismail (9K)",
+    "url": "https://github.com/ismail9k"
+  },
+  "homepage": "https://github.com/ismail9k/media-skills",
+  "repository": "https://github.com/ismail9k/media-skills",
+  "keywords": ["arabic", "scripts", "reels", "tiktok", "shorts", "copywriting", "content"]
+}
