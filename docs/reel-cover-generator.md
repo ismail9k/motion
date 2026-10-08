@@ -86,80 +86,36 @@ Built for Arabic and English tech content creators who want scroll-stopping cove
 
 ## Installation
 
+### Claude Code
+
+Claude needs Gemini MCP for direct image generation (see [Configure Gemini MCP](#configure-gemini-mcp) below).
+
+**Option A — as a plugin (recommended):**
+
+```
+/plugin marketplace add ismail9k/skills
+/plugin install reel-covers@ismail9k
+```
+
+**Option B — via Skills CLI:**
+
+```bash
+npx skills add ismail9k/media-skills --skill reel-cover-generator
+```
+
+---
+
 ### Codex
 
 Codex has built-in image generation, so you do **not** need Gemini MCP to generate covers.
 
 Codex installs skills into `$CODEX_HOME/skills` (defaults to `~/.codex/skills`).
 
-**Option A — via Skills CLI (recommended):**
-
 ```bash
-npx skills add ismail9k/skill-reel-cover-generator
-```
-
-**Option B — via Codex install-skill skill:**
-
-```bash
-/install-skill github.com/ismail9k/skill-reel-cover-generator
+npx skills add ismail9k/media-skills --skill reel-cover-generator
 ```
 
 Restart Codex after installing so it picks up the new skill.
-
----
-
-### Claude Code
-
-Claude needs Gemini MCP for direct image generation.
-
-#### Prerequisites
-
-**Gemini API key** — get one for free at [Google AI Studio](https://aistudio.google.com/app/apikey).
-
-**Gemini MCP** — see [@houtini/gemini-mcp](https://github.com/houtini-ai/gemini-mcp) to call Gemini's image generation API.
-
-> **Don't want to set up Gemini?** The skill still works — it will generate a ready-to-use image prompt that you can copy into any other image generation tool. You just won't be able to generate the cover directly within Claude.
-
-#### Step 1 — Install the skill
-
-**Option A — via Skills CLI (recommended):**
-
-```bash
-npx skills add ismail9k/skill-reel-cover-generator
-```
-
-**Option B — via `claude install-skill`**
-
-```bash
-claude install-skill github.com/ismail9k/skill-reel-cover-generator
-```
-
-
-Verify it was installed:
-
-```bash
-npx skills list
-```
-
-#### Step 2 — Configure Gemini MCP
-
-Add the following to `~/.claude/settings.json` (global) or `.mcp.json` (per-project):
-
-```json
-{
-  "mcpServers": {
-    "gemini": {
-      "command": "npx",
-      "args": ["-y", "@houtini/gemini-mcp"],
-      "env": {
-        "GEMINI_API_KEY": "your-gemini-api-key"
-      }
-    }
-  }
-}
-```
-
-Restart Claude Code after saving so it picks up the new MCP server.
 
 ---
 
@@ -167,29 +123,27 @@ Restart Claude Code after saving so it picks up the new MCP server.
 
 Claude Desktop also needs Gemini MCP for direct image generation.
 
-#### Prerequisites
+1. Download the repo from **the green "Code" button > Download ZIP** and unzip it
+2. Zip just the skill folder: `plugins/reel-covers/skills/reel-cover-generator`
+3. Go to **Customize > Skills > Create skill > Upload a skill**
+
+<center><img alt="Claude Desktop step 1" src="img/claude-desktop-step-1.png" width="600px" /></center>
+
+4. Upload the zip file
+
+<center><img alt="Claude Desktop step 2" src="img/claude-desktop-step-2.png" width="600px" /></center>
+
+---
+
+### Configure Gemini MCP
 
 **Gemini API key** — get one for free at [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 **Gemini MCP** — see [@houtini/gemini-mcp](https://github.com/houtini-ai/gemini-mcp) to call Gemini's image generation API.
 
-#### Step 1 — Install the skill
+> **Don't want to set up Gemini?** The skill still works — it will generate a ready-to-use image prompt that you can copy into any other image generation tool. You just won't be able to generate the cover directly within Claude.
 
-Claude Desktop doesn't support the Skills CLI, so install manually:
-
-1. Download the skill zip from **The green "Code" button > Download ZIP**
-2. Go to **Customize > Skills > Create skill > Upload a skill**
-
-<center><img alt="Claude Desktop step 1" src="img/claude-desktop-step-1.png" width="600px" /></center>
-
-3. Upload the zip file
-
-<center><img alt="Claude Desktop step 2" src="img/claude-desktop-step-2.png" width="600px" /></center>
-
-#### Step 2 — Configure Gemini MCP
-
-1. Go to **Settings > Developer > Edit Config** to open `claude_desktop_config.json`
-2. Add the `mcpServers` block:
+Add the `mcpServers` block to `.mcp.json` (Claude Code, per project), `~/.claude.json` (Claude Code, all projects; or run `claude mcp add`), or `claude_desktop_config.json` (Claude Desktop: **Settings > Developer > Edit Config**):
 
 ```json
 {
@@ -205,7 +159,7 @@ Claude Desktop doesn't support the Skills CLI, so install manually:
 }
 ```
 
-3. Save the file and **restart Claude Desktop**
+Restart Claude Code or Claude Desktop after saving so it picks up the new MCP server.
 
 ## Usage
 
@@ -290,7 +244,7 @@ The skill picks the best theme automatically based on your script's topic. Here'
 
 ## Customization
 
-The skill is fully editable. Open `SKILL.md` to:
+The skill is fully editable. Open [`SKILL.md`](../plugins/reel-covers/skills/reel-cover-generator/SKILL.md) to:
 
 - Add new themes to the theme reference table
 - Adjust the image generation prompt template
