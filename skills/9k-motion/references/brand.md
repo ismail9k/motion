@@ -84,7 +84,7 @@ Banned: bouncy text, elastic or back easing on type, everything fading in, a cen
 - **Nino** `B.nino(g, x, y, size, {expression, t, look})` is the 9k pixel mascot on a 16×16 grid (64-unit viewBox, crisp edges): green body, `#0A111A` screen, orange eyes, green mouth. Expressions are `idle`, `happy`, `thinking`, `worried`, `surprised` and `eyes-closed`. Motion: a blink every 5.4 s (eyes scaleY 0.15 for 3% of the cycle), a ±2 unit bob over 2.4 s when thinking, and a ±1 unit shiver over 0.6 s when worried. Snap him to whole pixels and never blur or rotate him. **On the green band, pass `colors: { body: B.C.white }`**, because his green body disappears on green.
 - **ASCII emoji** `^_^ ·ᴗ· ◡̈ >‿< x_x o_o -_-` in primary, accent or muted color. Use them as reactions, punctuation beats and winks.
 - **Tags** `#ai #vue #design-systems` as tag-badges.
-- **Stat** is a big value with a small label and an optional source (`480k+ / monthly downloads`). Use it for proof numbers.
+- **Stat** is a big value with a small label and an optional source (`123k+ / example metric`). Use it for proof numbers.
 - **YouTube brand kit (channel videos only):** the illustrated avatar and "9K" mark live in `~/…/Studio/2026/__higgsfield/resources/9k youtube intro/`. Use them only when the user picks the avatar in Round 3.
 
 ## Themes and direction

@@ -51,10 +51,10 @@ const SCENES = [
       const x = (W - pw) / 2, y = H / 2 - ph / 2 + (1 - s) * rem(3);
       g.save(); g.globalAlpha = clamp(t * 5);
       B.panel(g, x, y, pw, ph, { variant: 'feature' });
-      const n = Math.round(480 * tween(t, 0.2, 1.2));
+      const n = Math.round(123 * tween(t, 0.2, 1.2));
       const cx = DIR === 'rtl' ? x + pw - rem(2) : x + rem(2);   // content starts at the panel's logical start
       B.badge(g, 'Open source', cx, y + rem(2), { variant: 'outline', size: rem(1) });
-      B.stat(g, `${n}k+`, 'monthly downloads', cx, y + rem(10), { size: rem(6) });
+      B.stat(g, `${n}k+`, 'example metric', cx, y + rem(10), { size: rem(6) });
       g.restore();
   }},
   { from: 7.8, to: 10, draw(t) {                      // end card: green band, Nino reacts, bare 9k
