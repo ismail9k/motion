@@ -10,7 +10,7 @@
 //                      music: { src: "assets/bed.mp3", gain: 0.14, duck: true, fadeOut: 1.5 } | null }
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { events, cameraFilter } from '../lib/camera.mjs';
+import { events, cameraFilter, shiftFilter } from '../lib/camera.mjs';
 import { ffLog } from '../lib/media.mjs';
 
 const argv = process.argv;
@@ -71,7 +71,7 @@ if (Number.isFinite(+A.lufs)) {
 // ---- 3. picture: camera → grade → b-roll → overlay ----------------------------------------------------
 const vin = ['-i', 'work/cut.mov', '-framerate', String(F.fps), '-i', 'work/overlay/%06d.png', '-i', 'work/mix.wav'];
 const G = edit.grade === false ? null : { contrast: 1.04, saturation: 1.05, gamma: 1, brightness: 0, ...(edit.grade || {}) };
-const vf = [`[0:v]${cameraFilter(cam, cut.w, cut.h, F.w, F.h)}${G ? `,eq=contrast=${G.contrast}:saturation=${G.saturation}:gamma=${G.gamma}:brightness=${G.brightness}` : ''},setsar=1[cam]`];
+const vf = [`[0:v]${cameraFilter(cam, cut.w, cut.h, F.w, F.h)}${G ? `,eq=contrast=${G.contrast}:saturation=${G.saturation}:gamma=${G.gamma}:brightness=${G.brightness}` : ''}${shiftFilter(edit.graphics, edit.dir, F.w, F.h)},setsar=1[cam]`];
 let last = '[cam]', vi = 3;
 for (const b of edit.broll || []) {
   vin.push('-ss', String(b.from || 0), '-t', String(b.dur), '-i', b.src);

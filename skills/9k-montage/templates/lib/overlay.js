@@ -2,7 +2,8 @@
 // Classic script — exposes window.O. Depends on M (motion.js) and B (brand.js).
 // Every graphic is { type, t, dur, ...props } in OUTPUT time. Optional on any graphic:
 //   zone: 'top' | 'mid' | 'center' | 'low'   (portrait) — or y: 0..1 (centre of the graphic, fraction of H)
-//   x / w: centre and width as fractions of W (e.g. a side column in 16:9)
+//   x / w: centre and width as fractions of W · side: 'start' | 'end' = the 16:9 side column (x 0.79 / 0.21, w 0.34)
+//   kicker: a small tag above the graphic, on screen from its first frame (the label the build hangs under)
 //   dim: 0..0.6  darken the footage behind it · sfx: false to mute its auto sound
 (function (g) {
   const { clamp, lerp, sp, tween, typed, retype, caretOn, ease9k } = M;
@@ -15,14 +16,35 @@
   // and captions sit at 0.72 H. Override per film with zone/y after looking at work/contact.png.
   // Graphics never grow into the caption band: anything that would cross its top is lifted (not when captions are off).
   let CAP_TOP = 0.655;
-  function zoneY(p, h = 0) {
+  // KICK: room kept above the graphic for its kicker tag · TOPY: where that tag goes (the first zoneY of a graphic)
+  let KICK = 0, TOPY = null;
+  function zoneY(p, h0 = 0) {
+    const h = h0 + KICK;
     const lift = (y) => (p.captions === false ? y : Math.max(H * 0.08, Math.min(y, CAP_TOP * H - h - rem(0.6))));
-    if (p.y != null) return lift(p.y * H - h / 2);
     const z = p.zone || 'mid';
     const P = { top: 0.10, mid: 0.46, center: 0.5 - h / 2 / H, low: 0.58 };
     const L = { top: 0.08, mid: 0.30, center: 0.5 - h / 2 / H, low: 0.62 };
-    return lift((PORTRAIT ? P : L)[z] * H);
+    const y = lift(p.y != null ? p.y * H - h / 2 : (PORTRAIT ? P : L)[z] * H);
+    if (TOPY == null) TOPY = y;
+    return y + KICK;
   }
+  // Logical side → physical: 'start' is the reading start (the right in an RTL film)
+  const onRight = (p) => p.side === 'right' || (p.side !== 'left' && ((p.side || 'start') === 'start') === (DIR === 'rtl'));
+  // A tag centred on xC (B.badge takes the start edge, so measure it first)
+  function tagC(text, xC, y, size) {
+    G.save(); const a = G.globalAlpha; G.globalAlpha = 0; const { w } = B.badge(G, text, 0, -9999, { variant: 'tag', size });
+    G.globalAlpha = a; B.badge(G, text, DIR === 'rtl' ? xC + w / 2 : xC - w / 2, y, { variant: 'tag', size }); G.restore();
+  }
+  const KSIZE = () => rem(0.85);
+  function kicker(t, p, y) {
+    G.save(); G.globalAlpha *= Math.min(clamp(t * 6), 1 - tween(t, p.dur - 0.25, 0.25));
+    tagC(p.kicker, cx(), y + (1 - sp(t, 'snappy')) * rem(0.6), KSIZE()); G.restore();
+  }
+  // Split layout (C.panel): the column slides in on this curve and compose.mjs slides the footage the other way
+  // by half the column on the same one (lib/camera.mjs → shiftAt). Keep the two in step.
+  const smooth = (u) => { u = clamp(u); return u * u * (3 - 2 * u); };
+  const slide = (t, dur) => smooth(t / 0.5) - smooth((t - (dur - 0.4)) / 0.4);
+  let CAPDX = 0;
   // Per-graphic x (centre) / w (width) as fractions of W: set while that graphic draws, e.g. a side column in 16:9.
   let CX = null, SW = null;
   const safeW = () => (SW != null ? SW * W : PORTRAIT ? W * 0.84 : W * 0.6);
@@ -102,14 +124,14 @@
     const lh = size * 1.32, padX = size * 0.5, padY = size * 0.3;
     const widths = lines.map((l) => l.reduce((a, x) => a + x.wd, 0) + gap * (l.length - 1));
     const boxW = Math.max(...widths) + padX * 2, boxH = lines.length * lh + padY * 2;
-    const yC = (opts.y ?? (PORTRAIT ? 0.72 : 0.84)) * H, x0 = cx() - boxW / 2, y0 = yC - boxH / 2 + (1 - k) * rem(0.5);
+    const mid = cx() + CAPDX, yC = (opts.y ?? (PORTRAIT ? 0.72 : 0.84)) * H, x0 = mid - boxW / 2, y0 = yC - boxH / 2 + (1 - k) * rem(0.5);
     G.save(); G.globalAlpha = clamp(lt * 10) * (1 - out);
     B.rrect(G, x0, y0, boxW, boxH, B.radius.md()); G.fillStyle = 'rgba(15,15,15,0.86)'; G.fill();
     G.lineWidth = Math.max(1, R / 16); G.strokeStyle = B.F.theme.border; G.stroke();
     lines.forEach((line, li) => {
       // visual runs: consecutive Latin tokens read left→right inside an RTL line
       const runs = []; for (const tk of line) { const last = runs.at(-1); if (rtl && last && last.ltr && tk.latin) last.toks.push(tk); else runs.push({ ltr: !rtl || tk.latin, toks: [tk] }); }
-      let x = rtl ? cx() + widths[li] / 2 : cx() - widths[li] / 2;
+      let x = rtl ? mid + widths[li] / 2 : mid - widths[li] / 2;
       const yB = y0 + padY + li * lh + lh * 0.72;
       for (const run of runs) {
         const rw = run.toks.reduce((a, tk) => a + tk.wd, 0) + gap * (run.toks.length - 1);
@@ -158,9 +180,9 @@
     return [{ t: cv ? 0.1 : 0, type: 'type', text: p.text, cps: p.cps || 20, gain: 0.5 }];
   };
 
-  // Chips: logo + label pills, staggered. items: [{ label, icon: 'react' (simple-icons slug), sub }]
+  // Chips: logo + label pills, staggered — or each on its word with at: [t…] (relative). items: [{ label, icon: 'react' (simple-icons slug), pick }]
   C.chips = (t, p) => {
-    const items = p.items || [p], stagger = p.stagger ?? 0.18;
+    const items = p.items || [p], stagger = p.stagger ?? 0.18, ats = items.map((_, i) => p.at?.[i] ?? i * stagger);
     const measure = (sz) => items.map((it) => { fontFor(it.label, 700, sz); return G.measureText(it.label).width + sz * (it.icon && ICONS[it.icon] ? 3.4 : 2); });
     const size0 = rem(p.size || 1.7), w0 = measure(size0), t0 = w0.reduce((a, b) => a + b, 0) + size0 * 0.6 * (w0.length - 1);
     const size = size0 * clamp(safeW() / t0, 0.65, 1), ws = measure(size);   // shrink to one row before stacking
@@ -169,7 +191,7 @@
     const y0 = zoneY(p, stack ? items.length * (h + gapX) : h);
     let x = cx() - (stack ? 0 : total / 2);
     items.forEach((it, i) => {
-      const lt = t - i * stagger, e = env(lt, p.dur - i * stagger, 'snappy'), w = ws[i];
+      const lt = t - ats[i], e = env(lt, p.dur - ats[i], 'snappy'), w = ws[i]; if (lt < 0) return void (x += w + gapX);
       const xx = stack ? cx() - w / 2 : DIR === 'rtl' ? 2 * cx() - x - w : x, yy = stack ? y0 + i * (h + gapX) : y0;
       withEnv({ ...e, y: e.y * 0.6 }, () => {
         B.rrect(G, xx, yy, w, h, B.radius.pill()); G.fillStyle = it.pick ? B.C.primary : 'rgba(26,26,26,0.94)'; G.fill();
@@ -180,7 +202,7 @@
       });
       x += w + gapX;
     });
-    return items.map((_, i) => ({ t: i * stagger, type: 'pop', gain: 0.45 }));
+    return ats.map((a) => ({ t: a, type: 'pop', gain: 0.45 }));
   };
 
   // Versus: two panels, "vs" between, optional points under each, `pick` gets the accent border at pickAt.
@@ -228,7 +250,8 @@
     return [{ t: 0, type: 'pop', gain: 0.5 }, { t: 0.1, type: 'type', count: 6, cps: 7, gain: 0.3 }];
   };
 
-  // Card: feature panel with a typed title, body lines, optional badge.
+  // Card: feature panel with a typed title, body lines, optional badge. at: when the title starts typing (relative,
+  // default 0.15) — the badge holds the panel until his words reach the title · bodyAt: when the body fades in.
   C.card = (t, p) => {
     const e = env(t, p.dur), size = rem(p.size || 1.9), w = safeW();
     const tl = wrap(p.title, size, w - size * 1.6), bl = p.body ? wrap(p.body, size * 0.72, w - size * 1.6, 400) : [];
@@ -238,11 +261,11 @@
       const rtl = DIR === 'rtl', xs = rtl ? cx() + w / 2 - size * 0.8 : cx() - w / 2 + size * 0.8;
       let yy = y + size * 0.6;
       if (p.badge) { B.badge(G, p.badge, xs, yy, { variant: 'tag', size: size * 0.42 }); yy += size * 1.3; }
-      let tt = t - 0.15;
+      let tt = t - (p.at ?? 0.15);
       tl.forEach((ln, i) => { const d = [...ln].length / (p.cps || 24); yy += size * 1.1; typedLine(ln, tt, xs, yy, size, { align: 'start', cps: p.cps || 24, caret: tt < d || i === tl.length - 1 }); tt -= d; yy += size * 0.15; });
-      bl.forEach((ln, i) => { yy += size * 0.95; fontFor(ln, 400, size * 0.72); G.fillStyle = B.F.theme.muted; G.globalAlpha *= clamp((tt - i * 0.12) * 5); startText(ln, xs, yy); G.globalAlpha = e.a; });
+      bl.forEach((ln, i) => { yy += size * 0.95; fontFor(ln, 400, size * 0.72); G.fillStyle = B.F.theme.muted; G.globalAlpha *= clamp(((p.bodyAt != null ? t - p.bodyAt : tt) - i * 0.12) * 5); startText(ln, xs, yy); G.globalAlpha = e.a; });
     });
-    return [{ t: 0, type: 'pop', gain: 0.4 }, { t: 0.15, type: 'type', text: p.title, cps: p.cps || 24, gain: 0.4 }];
+    return [{ t: 0, type: 'pop', gain: 0.4 }, { t: p.at ?? 0.15, type: 'type', text: p.title, cps: p.cps || 24, gain: 0.4 }];
   };
 
   // List: items appear one by one (every s, or explicit at: [t…] relative to the graphic).
@@ -363,19 +386,83 @@
     return [{ t: 0, type: 'thump', gain: 0.6 }];
   };
 
-  // Lower third (landscape long-form): name + title, from the logical start edge.
+  // Lower third (landscape long-form): name, then title, then the org chip — each on its word (titleAt / orgAt).
   C.lowerThird = (t, p) => {
-    const e = env(t, p.dur, 'snappy'), size = rem(p.size || 1.4), rtl = DIR === 'rtl';
-    fontFor(p.name, 700, size); const w = Math.max(G.measureText(p.name).width, G.measureText(p.title || '').width * 0.7) + size * 2;
-    const x = rtl ? W * 0.94 - w : W * 0.06, y = H * (PORTRAIT ? 0.6 : 0.74), h = size * 3.2;
+    const e = env(t, p.dur, 'snappy'), size = rem(p.size || 1.4), rtl = DIR === 'rtl', os = size * 0.62;
+    fontFor(p.org || '', 600, os); const ow = p.org ? G.measureText(p.org).width + os * 1.4 : 0;
+    fontFor(p.title || '', 400, size * 0.7); const tw = G.measureText(p.title || '').width;
+    fontFor(p.name, 700, size); const w = Math.max(G.measureText(p.name).width, tw, ow) + size * 2;
+    const kT = p.title ? sp(t - (p.titleAt ?? 0.35), 'snappy') : 0, kO = p.org ? sp(t - (p.orgAt ?? 0.8), 'snappy') : 0; // the box grows a line as each lands
+    const h = size * 2.0 + size * 1.2 * kT + os * 2.6 * kO, x = rtl ? W * 0.94 - w : W * 0.06, y = H * (PORTRAIT ? 0.6 : 0.74) - (p.org ? os * 2.6 : 0);
     withEnv({ ...e, y: 0 }, () => {
-      G.save(); B.rrect(G, x, y, w * e.k, h, B.radius.md()); G.fillStyle = 'rgba(26,26,26,0.94)'; G.fill(); G.restore();
+      G.save(); B.rrect(G, rtl ? x + w * (1 - e.k) : x, y, w * e.k, h, B.radius.md()); G.fillStyle = 'rgba(26,26,26,0.94)'; G.fill(); G.restore();
       G.fillStyle = B.C.accent; G.fillRect(rtl ? x + w - size * 0.2 : x, y, size * 0.2, h);
-      const xs = rtl ? x + w - size : x + size;
-      fontFor(p.name, 700, size); G.fillStyle = B.F.theme.text; G.textAlign = 'start'; G.direction = rtl ? 'rtl' : 'ltr'; G.fillText(p.name, xs, y + size * 1.35);
-      if (p.title) { fontFor(p.title, 400, size * 0.7); G.fillStyle = B.F.theme.muted; G.fillText(p.title, xs, y + size * 2.5); }
+      const xs = rtl ? x + w - size : x + size, a = G.globalAlpha;
+      fontFor(p.name, 700, size); G.fillStyle = B.F.theme.text; G.textBaseline = 'alphabetic'; startText(p.name, xs, y + size * 1.35);
+      if (p.title) { G.globalAlpha = a * clamp((t - (p.titleAt ?? 0.35)) * 5); fontFor(p.title, 400, size * 0.7); G.fillStyle = B.F.theme.muted; startText(p.title, xs, y + size * 2.5); }
+      if (p.org) {
+        const ot = t - (p.orgAt ?? 0.8), k = sp(ot, 'snappy'), oy = y + size * 3.0 + (1 - k) * rem(0.4), oh = os * 1.9;
+        G.globalAlpha = a * clamp(ot * 6); B.rrect(G, rtl ? xs - ow : xs, oy, ow, oh, B.radius.sm()); G.fillStyle = B.C.primary; G.fill();
+        fontFor(p.org, 600, os); G.fillStyle = B.C.white; G.textAlign = 'center'; G.direction = isAr(p.org) ? 'rtl' : 'ltr'; G.textBaseline = 'middle';
+        G.fillText(p.org, (rtl ? xs - ow : xs) + ow / 2, oy + oh / 2 + os * 0.05);
+      }
+      G.globalAlpha = a;
     });
-    return [{ t: 0, type: 'whoosh', gain: 0.3 }];
+    return [{ t: 0, type: 'whoosh', gain: 0.3 }, ...(p.org ? [{ t: p.orgAt ?? 0.8, type: 'pop', gain: 0.4 }] : [])];
+  };
+
+  // Title: a full-frame title card. The footage drops almost to black, then kicker + big typed title + sub. Captions hide.
+  C.title = (t, p) => {
+    const a = Math.min(clamp(t * 5), 1 - tween(t, p.dur - 0.3, 0.3)), cps = p.cps || 26;
+    const size = rem(p.size || (PORTRAIT ? 3.2 : 4.2)), lines = wrap(p.text, size, W * 0.8), ks = rem(0.8), ss = size * 0.4;
+    const h = (p.kicker ? ks * 3.4 : 0) + lines.length * size * 1.2 + (p.sub ? ss * 2.2 : 0);
+    let y = H / 2 - h / 2, tt = t - 0.25;
+    G.save(); G.fillStyle = `rgba(15,15,15,${(p.shade ?? 0.9) * a})`; G.fillRect(0, 0, W, H); G.globalAlpha *= a;
+    if (p.kicker) { tagC(p.kicker, W / 2, y, ks); y += ks * 3.4; }
+    lines.forEach((ln, i) => { const d = [...ln].length / cps; typedLine(ln, tt, W / 2, y + (i + 0.82) * size * 1.2, size, { cps, caret: tt < d || i === lines.length - 1 }); tt -= d; });
+    if (p.sub) { fontFor(p.sub, 400, ss); G.fillStyle = B.F.theme.muted; G.textAlign = 'center'; G.direction = isAr(p.sub) ? 'rtl' : 'ltr'; G.globalAlpha *= clamp((tt - 0.1) * 4); G.fillText(p.sub, W / 2, y + lines.length * size * 1.2 + ss * 1.7); }
+    G.restore();
+    return [{ t: 0, type: 'whoosh', gain: 0.4 }, { t: 0.25, type: 'type', text: p.text, cps, gain: 0.45 }];
+  };
+
+  // Panel: the split layout. An opaque full-height side column slides in while the footage slides the other way,
+  // so his face re-centres in what is left. Numbered rows land on their words (at: [t…], relative); the newest is lit.
+  // badge + badgeAt: a small accent tag that then lands on every row ("AI" at each stage) · note + noteAt: a closing line.
+  C.panel = (t, p) => {
+    const k = slide(t, p.dur), cw = (p.w || 0.3) * W, right = onRight(p), x0 = right ? W - cw * k : cw * k - cw;
+    const size = rem(p.size || 1.6), pad = cw * 0.09, rtl = DIR === 'rtl', inner = cw - pad * 2, line = Math.max(1, R / 16);
+    const n = p.items.length, row = size * 2.1, gap = size * 0.45, head = (p.kicker ? size * 1.6 : 0) + (p.title ? size * 2.7 : 0);
+    const ats = p.items.map((_, i) => (p.at ? p.at[i] : 0.8 + i * (p.every || 0.6))), cur = ats.filter((a) => t >= a).length - 1;
+    const tagged = p.badge && t >= (p.badgeAt ?? Infinity);
+    G.save(); G.fillStyle = B.F.theme.bg; G.fillRect(x0, 0, cw, H);
+    G.fillStyle = B.F.theme.border; G.fillRect(right ? x0 : x0 + cw - line, 0, line, H);
+    G.beginPath(); G.rect(x0, 0, cw, H); G.clip();
+    const xs = rtl ? x0 + cw - pad : x0 + pad;
+    let y = Math.max(H * 0.08, H / 2 - (head + n * (row + gap) + (p.note ? size * 1.6 : 0)) / 2);
+    if (p.kicker) { B.badge(G, p.kicker, xs, y, { variant: 'tag', size: size * 0.5 }); y += size * 1.6; }
+    if (p.title) { fit(p.title, 700, size * 1.9, inner); G.fillStyle = B.F.theme.text; G.textBaseline = 'alphabetic'; G.globalAlpha = clamp((t - 0.3) * 5); startText(p.title, xs, y + size * 1.75); G.globalAlpha = 1; y += size * 2.7; }
+    p.items.forEach((it, i) => {
+      const lt = t - ats[i]; if (lt < 0) return;
+      const yy = y + i * (row + gap), lit = i === cur && !tagged, nx = rtl ? xs - size * 0.6 : xs + size * 0.6;
+      G.save(); G.globalAlpha = clamp(lt * 6); G.translate((right ? 1 : -1) * (1 - sp(lt, 'snappy')) * rem(1.2), 0);
+      B.rrect(G, x0 + pad, yy, inner, row, B.radius.md()); G.fillStyle = lit ? B.C.primary : B.F.theme.surface; G.fill();
+      G.lineWidth = line; G.strokeStyle = lit ? B.C.primary : B.F.theme.border; G.stroke();
+      G.font = `400 ${Math.round(size * 0.55)}px ${B.FONTS.mono}`; G.fillStyle = lit ? 'rgba(255,255,255,0.75)' : B.F.theme.muted;
+      G.direction = 'ltr'; G.textBaseline = 'middle'; G.textAlign = rtl ? 'right' : 'left'; G.fillText(String(i + 1).padStart(2, '0'), nx, yy + row / 2);
+      fit(it, 600, size, inner - size * (p.badge ? 4.4 : 2.4)); G.fillStyle = lit ? B.C.white : B.F.theme.text; G.direction = isAr(it) ? 'rtl' : 'ltr';
+      G.fillText(it, rtl ? nx - size * 1.4 : nx + size * 1.4, yy + row / 2 + size * 0.05);
+      const bt = t - (p.badgeAt ?? Infinity) - i * 0.1;
+      if (p.badge && bt > 0) {
+        const bs = size * 0.6; G.font = `600 ${Math.round(bs)}px ${B.FONTS.mono}`; const bw = G.measureText(p.badge).width + bs * 1.2, bh = bs * 1.8;
+        const bx = rtl ? x0 + pad + size * 0.5 : x0 + cw - pad - size * 0.5 - bw;
+        G.globalAlpha = clamp(bt * 6) * (0.4 + 0.6 * sp(bt, 'snappy')); B.rrect(G, bx, yy + row / 2 - bh / 2, bw, bh, B.radius.sm()); G.fillStyle = B.C.accent; G.fill();
+        G.fillStyle = B.C.onAccent; G.textAlign = 'center'; G.direction = 'ltr'; G.fillText(p.badge, bx + bw / 2, yy + row / 2 + bs * 0.05);
+      }
+      G.restore();
+    });
+    if (p.note) { G.globalAlpha = clamp((t - (p.noteAt ?? p.badgeAt ?? 1)) * 4); fit(p.note, 600, size * 0.85, inner); G.fillStyle = B.F.theme.muted; G.textBaseline = 'alphabetic'; startText(p.note, xs, y + n * (row + gap) + size * 1.1); }
+    G.restore();
+    return [{ t: 0, type: 'whoosh', gain: 0.45 }, ...ats.map((a) => ({ t: a, type: 'click', gain: 0.45 })), ...(p.badge && p.badgeAt != null ? [{ t: p.badgeAt, type: 'ding', gain: 0.35 }] : [])];
   };
 
   // End card: green band rises, Nino lands, handle typed, wordmark retypes to the bare 9k.
@@ -416,9 +503,18 @@
     if (d) { dim(d); n++; }
     const under = active.filter((x) => x.type === 'mask' || (x.type === 'image' && x.fit === 'full'));
     for (const x of under) { C[x.type](t - x.t, x); n++; }
-    const capOff = active.some((x) => x.captions === false || ['band', 'endcard', 'quote'].includes(x.type) || (x.type === 'image' && x.fit === 'full'));
+    const capOff = active.some((x) => x.captions === false || ['band', 'endcard', 'quote', 'title'].includes(x.type) || (x.type === 'image' && x.fit === 'full'));
+    const pn = active.find((x) => x.type === 'panel'); // captions follow the footage as it slides away from the column
+    CAPDX = pn ? (onRight(pn) ? -1 : 1) * ((pn.w || 0.3) * W / 2) * slide(t - pn.t, pn.dur) : 0;
     if (!capOff && data.captions) n += captions(t, data.captions, data.captionStyle || {});
-    for (const x of active) if (!under.includes(x)) { CX = x.type === 'emoji' ? null : x.x ?? null; SW = x.w ?? null; C[x.type](t - x.t, x); CX = SW = null; n++; }
+    for (const x of active) if (!under.includes(x)) {
+      const col = !PORTRAIT && x.side && x.type !== 'panel' ? (onRight(x) ? 0.79 : 0.21) : null;
+      CX = x.type === 'emoji' ? null : x.x ?? col; SW = x.w ?? (col ? 0.34 : null);
+      KICK = x.kicker && x.type !== 'panel' && x.type !== 'title' ? KSIZE() * 2 + rem(0.5) : 0; TOPY = null;
+      C[x.type](t - x.t, x);
+      if (KICK && TOPY != null) kicker(t - x.t, x, TOPY);
+      CX = SW = null; KICK = 0; n++;
+    }
     return n;
   }
   // SFX cues every component asks for, in output time (render-overlay.mjs writes them to work/cues.auto.json)

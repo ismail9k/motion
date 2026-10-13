@@ -42,8 +42,11 @@ Write tech names the way the brand writes them: `Vue.js`, `Node.js`, `TypeScript
 
 ## 4. Graphics: what goes where
 
-- **Density.** Shorts get one beat every 3–5 s and long-form one every 8–15 s. Never more than one graphic plus the caption on screen at once. Leave 1–2 s gaps so the face carries the line.
-- **Trigger on the word.** A graphic's `t` is the start of the word that names it, from `work/words.cut.json` (or 0.1 s before it). Elements inside it (`pointsAt`, `list.at`, `versus.at`, `pickAt`) also land on their words.
+- **One graphic per sentence, held for the sentence.** Walk `transcript.cut.md` sentence by sentence and give each idea one graphic that stays up while he says it (3–8 s), then hand over to the next. A graphic that pops for 2 s and leaves the face bare for 6 s reads as an unfinished edit. Never more than one graphic plus the caption on screen at once.
+- **Coverage.** `render-overlay.mjs` (and `review.sh`) prints `graphics on screen: N % of talk` and every bare stretch over 4 s. Aim for 80 % or more in 16:9 and 60 % or more in 9:16, with no bare stretch listed. A source insert counts as covered. Leave a stretch bare only on purpose (one line he should say straight to camera), and say so in the plan.
+- **Build it on his words.** The graphic opens with its label and fills in as he talks: `kicker` (or a card's `badge`, a list's `title`) is on screen from the first frame, and every part after it lands on the word that names it — `chips.at`, `list.at`, `card.at` / `bodyAt`, `versus.at`, `panel.at`, `lowerThird.titleAt` / `orgAt`. All of those come from `work/words.cut.json`. Don't open a card more than ~1 s before its title starts typing: an empty panel is worse than a bare face.
+- **Trigger on the word.** A graphic's `t` is the start of the first word of its sentence (or 0.1 s before it), and each element inside it sits on its own word.
+- **Change the layout, not just the content.** A film where every graphic is the same box in the same corner goes flat by the third one. In 16:9 over 45 s, use at least four of these: side column, the other side column, `lowerThird`, a full-frame `title`, the split `panel`, `band`, `nino`. Use `title` once, where he names the video or the course. Use `panel` once, on the longest enumeration (a lifecycle, a stack, steps): it holds for the whole list, 6–10 s.
 - **Choose by what is said:**
   - names a tool → `chips`
   - compares two → `versus`
@@ -58,7 +61,10 @@ Write tech names the way the brand writes them: `Vue.js`, `Node.js`, `TypeScript
 - **Hook.** The first 2 s must show something that isn't just the face. If the export already has a burned hook line, restyle it with `hook` + `cover`. Otherwise type the strongest line of the video at the top.
 - **End.** Use `tail: 3.2` and an `endcard` (CTA + handle) unless the video ends on a punchline that should cut to black.
 - **Placement.** Use the `mid` zone (below the chin) by default. Use `top` only when the face is low or the camera is pushed out. Never put a graphic over the mouth.
-- **16:9 placement.** A centred talking head fills the middle of a landscape frame, and every component centres on it by default. Put graphics in a side column instead (`x: 0.79, w: 0.34` beside the head, with `y` ≈ 0.4) and keep one side for the whole film. The lower third, Nino, the band and the end card place themselves.
+- **16:9 placement.** A centred talking head fills the middle of a landscape frame, and every component centres on it by default. Put graphics in a side column instead: `side: "start"` or `"end"` with `y` ≈ 0.42. Alternate the side from one graphic to the next, so the eye crosses his face each time. A column never crosses the edge of his head: keep `w` ≤ 0.36, and check the stills at the punched-in zoom, where the head is wider. The lower third, the title, the panel, Nino, the band and the end card place themselves.
+- **16:9 captions.** Use `style: "phrase"` at `y: 0.9`, `size: 1.5`: a full line along the bottom edge, clear of the side columns and his chest. Word-by-word chunks at 0.84 are for shorts.
+- **Readable at phone size.** Nothing he is meant to read is smaller than a caption. Kickers and badges are the only small text, and they only label. If a label shrinks to fit its box, shorten the label.
+- **His language.** A graphic repeats the words he says, in the language he says them: Arabic for the Arabic words, Latin for the tech terms. Don't translate his line into English on screen.
 - **Assets next to the source** (`montage.json.assets`): use them when they fit. A notification sound goes on "someone asked me", a screenshot goes in an `image` card. List any unused ones in the plan.
 
 ## 5. Camera rhythm
@@ -84,7 +90,8 @@ Look at `out/contact.png`, `out/phone.png` and `out/strip.png` and score:
 - graphic timing against the words
 - face never covered
 - 9k brand accuracy
-- pacing (no dead stretch over 6 s)
+- coverage and pacing (the printed coverage figure, no bare stretch over 4 s, no graphic shorter than its sentence)
+- layout variety (count the distinct layouts on the contact sheet)
 - audio (loudness, SFX not louder than the voice)
 
 Hunt specifically for:
@@ -92,7 +99,10 @@ Hunt specifically for:
 - a burned-in caption peeking out
 - Latin text running out of its panel in RTL
 - two accents in one chunk or graphic
-- a graphic on the mouth
+- a graphic on the mouth, or a side column clipping the edge of his head
+- an empty panel waiting for its text
+- every graphic on the same side
+- a `mask` or `hook.cover` during a `panel` (the footage slides and the cover doesn't)
 - a caption over a source insert
 - a band longer than 1.2 s
 - a punch-in that crops the forehead

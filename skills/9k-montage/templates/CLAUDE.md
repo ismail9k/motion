@@ -20,6 +20,7 @@ Schema and component list: `{{SKILL_DIR}}/references/edit-spec.md` · Craft: `{{
 
 ## Edit rules
 - Every jump cut changes the framing (camera.auto). Never two identical framings across a cut.
-- Something new on screen every 2–4 s, but never more than one graphic plus the caption at a time.
+- One graphic per sentence, held for the sentence and built on his words. Never more than one graphic plus the caption at a time.
+- Read the coverage line `render-overlay.mjs` prints: no bare stretch over 4 s unless the plan says why.
 - Graphics land ON the word that triggers them (use the word's start time from transcript.cut.md).
 - The face stays visible: graphics go in a zone that misses the face (check contact.png), or use `dim`.

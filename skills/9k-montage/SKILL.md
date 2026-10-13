@@ -19,7 +19,7 @@ Styling comes from 9k-motion (`references/brand.md` there: colors, type, springs
 2. **Ingest:** `node scripts/ingest.mjs` (add `--lang ar` for Arabic). Read `work/transcript.md` and `work/ingest.json`, and **look at** `work/contact.png`. Follow `references/craft.md` §1: face box, burned-in text, inserts already in the source, framing.
 3. **Cut:** write `edit.json` → `cut` (drops for retakes and flubs on raw takes; just tightening on rough cuts) and `tail` (3.2 for an end card, decided now because cut.mjs applies it), then run `node scripts/cut.mjs`. From here on, every time is OUTPUT time from `work/transcript.cut.md`.
 4. **Transcript:** run `node lib/captions.mjs`, fix every misheard word in `captions.fixes`, and set `keywords`. Repeat until every chunk reads right (craft §3).
-5. **Design the edit:** fill in `camera`, `graphics` (with the `endcard` at the start of the tail) and `audio`. Schema: `references/edit-spec.md`. Choices: craft §4–6. Then run `bash scripts/review.sh` for overlay-over-footage stills every 2 s, look at them, and fix anything obvious.
+5. **Design the edit:** fill in `camera`, `graphics` (with the `endcard` at the start of the tail) and `audio`. Schema: `references/edit-spec.md`. Choices: craft §4–6. Work sentence by sentence: one graphic per idea, held for the sentence and built on his words. Then run `bash scripts/review.sh` for overlay-over-footage stills every 2 s, read the coverage line it prints, look at the stills, and fix every bare stretch and anything obvious.
 6. **Plan → GATE:** fill in `docs/plan.md` with source facts, cut summary, transcript fixes, and the beat table (time · words · caption accent · graphic · camera · sound). Show it, together with `out/contact.png`. **Wait for OK.** Apply any notes, then continue without asking again.
 7. **Render:** `node scripts/render-overlay.mjs`, then `node scripts/compose.mjs`.
 8. **Critique loop:** run `bash scripts/review.sh out/final-1080x1920.mp4 <climax-t>`. Open contact, phone and strip, score them with the rubric in craft §7, fix the 3 worst problems, and re-render. Do at least 2 rounds. Log each round in `docs/review_log.md`.
@@ -29,7 +29,7 @@ Styling comes from 9k-motion (`references/brand.md` there: colors, type, springs
 
 | Need | Where |
 |---|---|
-| Every edit.json key, all 16 graphic types | `references/edit-spec.md` |
+| Every edit.json key, all 18 graphic types | `references/edit-spec.md` |
 | Cut rules, whisper fixes, graphic choice and placement, sound, review rubric | `references/craft.md` |
 | 9k colors, type, springs, Nino, wordmark | `<skill>/../9k-motion/references/brand.md` |
 | Live preview of overlay over footage | open `overlay.html` in Chrome (scrub the video) |
@@ -47,7 +47,9 @@ Timing: on Apple Silicon, ingest takes ~20 s and cut ~60 s per 100 s of 4K. Over
 | "The transcript is close enough" | Every misheard tech name ends up on screen in orange. Fix every chunk |
 | "I'll put captions where they always go" | Burned-in text and source photos are already on screen there. Hide those ranges, or cover them |
 | "Graphics at the top look clean" | His face is at the top. Use the band below the chin |
-| "More graphics = more motion" | One graphic plus the caption at a time, a beat every 3–5 s, one band per film |
+| "More graphics = more motion" | One graphic plus the caption at a time, one band, one title and one panel per film |
+| "A 2 s pop on the keyword is enough" | The graphic holds for the sentence and builds on his words. Bare face for 5 s reads as unfinished: read the coverage line |
+| "Same box, same corner, it's consistent" | It's flat. Alternate sides and change layout: column, lower third, title, split panel, band |
 | "I'll build captions by hand in a canvas scene" | `captions.mjs` + `overlay.js` already do RTL/LTR runs, proclitic splits and keyword pills |
 | "I rendered it, so it's done" | It isn't done until you've looked at the review sheets for 2 rounds |
 | "Sample the logo's colours / use Inter" | 9k tokens only. Logos are monochrome by default (`iconColor: 'brand'` only if he asks) |

@@ -1,13 +1,13 @@
 // node scripts/render-overlay.mjs [--from 0 --to DUR] [--stills 0.5 | --at 1.2,4.8] [--workers 4]
 // 1. Builds work/edit.data.js (edit.json + caption chunks + icon paths) for overlay.html.
-// 2. Writes work/captions.json and work/cues.auto.json (the SFX every graphic asks for).
+// 2. Writes work/captions.json and work/cues.auto.json (the SFX every graphic asks for), and prints graphic coverage.
 // 3. Renders the transparent overlay as a PNG sequence → work/overlay/000000.png … (one per output frame),
 //    or with --stills/--at: overlay-over-footage stills → out/stills/ + out/contact.png (no full render).
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSync } from 'node:fs';
 import { chunk } from '../lib/captions.mjs';
-import { events, cameraFilterAt } from '../lib/camera.mjs';
+import { events, cameraFilterAt, shiftFilterAt } from '../lib/camera.mjs';
 import { sheet } from '../lib/sheet.mjs';
 
 const argv = process.argv;
@@ -48,6 +48,16 @@ const data = {
 };
 writeFileSync('work/edit.data.js', 'window.EDIT = ' + JSON.stringify(data) + ';\n');
 
+// ---- coverage: how much of the talk has a graphic on screen, and where the bare stretches are (craft §4) ----
+{
+  const talk = DUR - (edit.tail || 0), GAP = 4, f = (t) => t.toFixed(1);
+  const iv = data.graphics.filter((x) => x.type !== 'mask').map((x) => [Math.max(0, x.t), Math.min(talk, x.t + x.dur)]).filter(([a, b]) => b > a).sort((a, b) => a[0] - b[0]);
+  let on = 0, end = 0; const bare = [];
+  for (const [a, b] of iv) { if (a - end > GAP) bare.push([end, a]); on += Math.max(0, b - Math.max(a, end)); end = Math.max(end, b); }
+  if (talk - end > GAP) bare.push([end, talk]);
+  console.log(`graphics on screen: ${Math.round((on / talk) * 100)} % of ${f(talk)} s of talk` + (bare.length ? ` · bare stretches over ${GAP} s: ${bare.map(([a, b]) => `${f(a)}–${f(b)}`).join(', ')}` : ' · no bare stretch over 4 s'));
+}
+
 // ---- browser ------------------------------------------------------------------------
 const browser = await chromium.launch();
 async function openPage() {
@@ -72,7 +82,7 @@ if (every || at) {
   for (const t of times) {
     const name = `out/stills/${String(n++).padStart(3, '0')}_${t.toFixed(2)}s`;
     execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-ss', String(t), '-i', 'work/cut.mov', '-frames:v', '1',
-      '-vf', cameraFilterAt(cam, t, cut.w, cut.h, F.w, F.h), name + '_bg.png']);
+      '-vf', cameraFilterAt(cam, t, cut.w, cut.h, F.w, F.h) + shiftFilterAt(edit.graphics, edit.dir, t, F.w, F.h), name + '_bg.png']);
     const png = await grab(first, t);
     if (png) {
       writeFileSync(name + '_ov.png', Buffer.from(png.split(',')[1], 'base64'));

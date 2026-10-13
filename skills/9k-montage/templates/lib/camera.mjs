@@ -74,3 +74,25 @@ export function cameraFilterAt(cam, t, cw, ch, W, H) {
   const x = Math.max(0, Math.min(sw - W, fx * sw - W / 2)), y = Math.max(0, Math.min(sh - H, fy * sh - H / 2));
   return `scale=${sw}:${sh}:flags=bicubic,crop=${W}:${H}:${Math.round(x)}:${Math.round(y)}`;
 }
+
+// Split layout: a `panel` graphic slides an opaque side column in, and the footage slides the other way by half the
+// column, so the face re-centres in what is left. Same curve as `slide` in overlay.js: keep the two in step.
+const smooth = (u) => { u = Math.min(1, Math.max(0, u)); return u * u * (3 - 2 * u); };
+const panels = (graphics = [], dir = 'ltr') => graphics.filter((g) => g.type === 'panel').map((g) => {
+  const right = g.side === 'right' || (g.side !== 'left' && ((g.side || 'start') === 'start') === (dir === 'rtl'));
+  return { t: g.t, dur: g.dur ?? 2.5, d: ((right ? -1 : 1) * (g.w || 0.3)) / 2 };
+});
+// Footage offset at t as a fraction of W (+ = right)
+export const shiftAt = (graphics, dir, t) => panels(graphics, dir).reduce((a, p) => a + p.d * (smooth((t - p.t) / 0.5) - smooth((t - (p.t + p.dur - 0.4)) / 0.4)), 0);
+// ffmpeg: pad both sides with the 9k background, then crop with a moving x. The bare strip is always under the column.
+export function shiftFilter(graphics, dir, W, H) {
+  const ps = panels(graphics, dir); if (!ps.length) return '';
+  const S = 2 * Math.ceil((Math.max(...ps.map((p) => Math.abs(p.d))) * W) / 2);
+  const sm = (a, d) => { const u = `clip((t-${n(a)})/${d},0,1)`; return `(${u}*${u}*(3-2*${u}))`; };
+  const dx = ps.map((p) => `${n(p.d * W)}*(${sm(p.t, 0.5)}-${sm(p.t + p.dur - 0.4, 0.4)})`).join('+');
+  return `,pad=${W + 2 * S}:${H}:${S}:0:color=0x0F0F0F,crop=${W}:${H}:x='${S}-(${dx})':y=0`;
+}
+export function shiftFilterAt(graphics, dir, t, W, H) {
+  const dx = Math.round(shiftAt(graphics, dir, t) * W), S = Math.abs(dx);
+  return dx ? `,pad=${W + 2 * S}:${H}:${S}:0:color=0x0F0F0F,crop=${W}:${H}:${S - dx}:0` : '';
+}

@@ -3,7 +3,7 @@
 **Source:** <path> · <WxH, fps, duration> · verdict: <raw | rough>
 **Cut:** <before> s → <after> s · <n> jump cuts · pauses > <maxPause> s tightened · drops: <list with reasons>
 **Transcript fixes:** <whisper word → correct word, …>
-**Look:** dark 9k · captions word-by-word at 70 % H · focus <x,y> · music: <none | file> · end card: <yes/no>
+**Look:** dark 9k · captions <word-by-word at 70 % H | phrase line at 90 % H> · graphics on screen <N> % · layouts: <column ×2, lower third, title, panel, band> · focus <x,y> · music: <none | file> · end card: <yes/no>
 
 | Out time | What he says (short) | Caption accent | Graphic (type · zone) | Camera | Sound |
 |---|---|---|---|---|---|

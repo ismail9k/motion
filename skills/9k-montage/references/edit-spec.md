@@ -5,7 +5,7 @@ One file holds every edit decision. `cut.*` is in **source** seconds (from `work
 | Keys changed | Re-run |
 |---|---|
 | `cut`, `tail`, `format` | `cut.mjs` → `render-overlay.mjs` → `compose.mjs` (every output time can shift: re-read transcript.cut.md). Set `tail` before the first cut |
-| `captions`, `graphics`, `theme`, `dir` | `render-overlay.mjs` → `compose.mjs` |
+| `captions`, `graphics`, `theme`, `dir` | `render-overlay.mjs` → `compose.mjs` (it prints graphic coverage: see craft §4) |
 | `camera`, `grade`, `broll`, `audio` | `compose.mjs` |
 
 ## Top level
@@ -49,21 +49,21 @@ Pauses come from measured audio silence, never from word gaps. Whisper skips spe
 | `keywords` | `[]` | Words that get the orange pill while spoken. Numbers like `90%` get it automatically. One accent per chunk |
 | `hide` | `[]` | `[[a,b],…]` output ranges with no captions: burned-in text, image inserts already in the source, the hook. A chunk spoken just before a range also stops at its start, so it never spills onto the insert |
 | `override` | `[]` | `{s, e, text, at?}` replaces whisper's WORDS in `[s, e)` with `text`, timed evenly or at `at: [t…]`. They're chunked by the normal rules. Use it for missed or garbled speech |
-| `size` / `y` | `2.05 rem` / `0.72` | `y` is the caption centre as a fraction of H. Landscape default: 0.84 |
+| `size` / `y` | `2.05 rem` / `0.72` | `y` is the caption centre as a fraction of H. Landscape default: 0.84. For 16:9 use `style: "phrase"`, `y: 0.9`, `size: 1.5` |
 
 Arabic proclitics glued to Latin words (`كReactivity`, `وDeveloper`) split by themselves. Connectors (`و`, `في`, `من`…) never end a chunk. Check with `node lib/captions.mjs`.
 
 ## graphics
 
-Every graphic: `{type, t, dur, …}`. A graphic that would grow into the caption band is lifted above it, unless it has `captions: false`. Optional on any of them: `zone` (`top` | `mid` | `center` | `low`), or `y` (the graphic's top or centre as a fraction of H), `x` / `w` (the graphic's centre and width as fractions of W, e.g. `x: 0.79, w: 0.34` for a side column in 16:9, where the default centred 0.6 W panel lands on his chest), `dim` (0–0.6, darkens the footage), `sfx: false`, `captions: false` (hides captions while it shows).
+Every graphic: `{type, t, dur, …}`. A graphic that would grow into the caption band is lifted above it, unless it has `captions: false`. Optional on any of them: `zone` (`top` | `mid` | `center` | `low`), or `y` (the graphic's top or centre as a fraction of H), `side` (`start` | `end`: the 16:9 side column beside his head, `start` being the reading start, so the right in an RTL film; it sets `x` 0.79 / 0.21 and `w` 0.34), `x` / `w` (the graphic's centre and width as fractions of W, when `side` isn't enough), `kicker` (a small tag above the graphic, on screen from its first frame), `dim` (0–0.6, darkens the footage), `sfx: false`, `captions: false` (hides captions while it shows).
 
 | type | Props | Use |
 |---|---|---|
 | `hook` | `text`, `sub?`, `cover?: [x,y,w,h]`, `size?` | The first-2-seconds line, typed with a caret. `cover` puts an opaque panel exactly over burned-in text |
-| `chips` | `items: [{label, icon?, pick?}]`, `stagger?` | Tech names with logos. `icon` = simple-icons slug (`react`, `vuedotjs`, `nodedotjs`, `rust`, `typescript`, `docker`…) |
+| `chips` | `items: [{label, icon?, pick?}]`, `at?: [t…]`, `stagger?` | Tech names with logos. `at` lands each chip on its word (relative to `t`). `icon` = simple-icons slug (`react`, `vuedotjs`, `nodedotjs`, `rust`, `typescript`, `docker`…) |
 | `versus` | `a`, `b`: `{label, icon?, points?, pointsAt?}`, `at: [aT,bT]`, `pick?: 'a'\|'b'`, `pickAt?`, `pointSize?` (0.78 of `size`) | X vs Y. Each side enters when it is named. `pick` turns that side's border orange |
 | `stat` | `value: "90%"`, `label`, `count?: true` | Any number he says. It counts up |
-| `card` | `title`, `body?`, `badge?` | A question or claim worth reading. The title is typed |
+| `card` | `title`, `body?`, `badge?`, `at?`, `bodyAt?` | A question or claim worth reading. The title starts typing at `at` (relative, default 0.15) and the body fades in at `bodyAt` |
 | `list` | `items: []`, `title?`, `at?: [t…]` | Reasons and steps. Each item lands on its word |
 | `retype` | `from`, `to`, `hold?` | "Not X, it's Y": strike, backspace, retype |
 | `emoji` | `text: '^_^'`, `x?`, `y?`, `color?` | ASCII reaction on a punchline: `^_^ x_x o_o >‿<`. Beside the head, never over the mouth |
@@ -72,7 +72,9 @@ Every graphic: `{type, t, dur, …}`. A graphic that would grow into the caption
 | `quote` | `text` | One serif line on a dimmed frame. Captions hide |
 | `code` | `code`, `title?` | A typed code panel |
 | `image` | `src`, `fit: 'card'\|'full'`, `caption?` | A b-roll still from `assets/`. `full` hides captions |
-| `lowerThird` | `name`, `title?` | Long-form 16:9 only |
+| `lowerThird` | `name`, `title?`, `titleAt?`, `org?`, `orgAt?` | Long-form 16:9 only. The box grows a line as the title, then the green `org` chip, land on their words |
+| `title` | `text`, `kicker?`, `sub?`, `shade?` (0.9), `cps?` | A full-frame title card: the footage drops almost to black and the title is typed. Captions hide. Once per film |
+| `panel` | `items: []`, `at: [t…]`, `title?`, `kicker?`, `side?`, `w?` (0.3), `badge?` + `badgeAt?`, `note?` + `noteAt?` | The split layout, 16:9: an opaque side column slides in and the footage slides the other way, so his face re-centres. Numbered rows land on their words and the newest is lit. `badge` then tags every row ("AI" at each stage). Captions follow the footage. Not during a `mask` or `hook.cover` |
 | `endcard` | `cta`, `handle` | Green band, Nino, the wordmark retyped to 9k. Pair it with `tail` |
 | `mask` | `rect: [x,y,w,h]`, `color?` | A bare opaque box over burned-in text, when no hook sits there |
 
