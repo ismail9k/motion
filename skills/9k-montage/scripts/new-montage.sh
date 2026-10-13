@@ -13,7 +13,7 @@ SLUG="$(basename "$(dirname "$SRC")" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^
 DIR="${2:-$HOME/films/montage-$SLUG}"
 
 mkdir -p "$DIR"/{docs,assets,work,out,lib,scripts}
-cp "$SKILL_DIR"/scripts/{ingest,cut,render-overlay,compose}.mjs "$SKILL_DIR"/scripts/review.sh "$DIR/scripts/"
+cp "$SKILL_DIR"/scripts/{ingest,cut,render-overlay,compose}.mjs "$SKILL_DIR"/scripts/review.sh "$SKILL_DIR"/scripts/archive.sh "$DIR/scripts/"
 cp "$MOTION_DIR"/templates/lib/{motion.js,brand.js,audio.mjs} "$DIR/lib/"
 cp "$SKILL_DIR"/templates/lib/* "$DIR/lib/"
 cp -n "$SKILL_DIR"/templates/overlay.html "$DIR/" 2>/dev/null || true

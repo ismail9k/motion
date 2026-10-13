@@ -11,6 +11,7 @@ Schema and component list: `{{SKILL_DIR}}/references/edit-spec.md` · Craft: `{{
 5. `node scripts/render-overlay.mjs` → work/overlay/*.png (full transparent overlay)
 6. `node scripts/compose.mjs` → out/final-1080x1920.mp4 (`--from a --to b --half` for a quick preview)
 7. `bash scripts/review.sh out/final-1080x1920.mp4 <fast-t>` → contact, phone, strip, loudness
+8. `bash scripts/archive.sh` → the editable project saved next to the source as `<name>-9k/`. Run it on every delivery.
 
 ## Look: 9k design system only (tokens in lib/brand.js)
 - Colors from `B.C` / `B.F.theme`; one accent per shot; text on orange is black; the glow never sits behind captions.

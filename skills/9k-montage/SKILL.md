@@ -15,7 +15,7 @@ Styling comes from 9k-motion (`references/brand.md` there: colors, type, springs
 
 ## Workflow
 
-1. **Scaffold:** `bash <skill>/scripts/new-montage.sh "<video>" [project-dir]` (`<skill>` is this skill's base directory) creates the project (default `~/films/montage-<folder-slug>/`). Then `cd` into it. It links sounds and images found next to the video into `assets/`. Never write into the source folder until delivery.
+1. **Scaffold:** if `<name>-9k/` already sits next to the video, this is a re-edit: work in that folder (its README has the rebuild commands) and skip to the step the request touches. Otherwise `bash <skill>/scripts/new-montage.sh "<video>" [project-dir]` (`<skill>` is this skill's base directory) creates the project (default `~/films/montage-<folder-slug>/`). Then `cd` into it. It links sounds and images found next to the video into `assets/`. Never write into the source folder until delivery.
 2. **Ingest:** `node scripts/ingest.mjs` (add `--lang ar` for Arabic). Read `work/transcript.md` and `work/ingest.json`, and **look at** `work/contact.png`. Follow `references/craft.md` §1: face box, burned-in text, inserts already in the source, framing.
 3. **Cut:** write `edit.json` → `cut` (drops for retakes and flubs on raw takes; just tightening on rough cuts) and `tail` (3.2 for an end card, decided now because cut.mjs applies it), then run `node scripts/cut.mjs`. From here on, every time is OUTPUT time from `work/transcript.cut.md`.
 4. **Transcript:** run `node lib/captions.mjs`, fix every misheard word in `captions.fixes`, and set `keywords`. Repeat until every chunk reads right (craft §3).
@@ -23,7 +23,7 @@ Styling comes from 9k-motion (`references/brand.md` there: colors, type, springs
 6. **Plan → GATE:** fill in `docs/plan.md` with source facts, cut summary, transcript fixes, and the beat table (time · words · caption accent · graphic · camera · sound). Show it, together with `out/contact.png`. **Wait for OK.** Apply any notes, then continue without asking again.
 7. **Render:** `node scripts/render-overlay.mjs`, then `node scripts/compose.mjs`.
 8. **Critique loop:** run `bash scripts/review.sh out/final-1080x1920.mp4 <climax-t>`. Open contact, phone and strip, score them with the rubric in craft §7, fix the 3 worst problems, and re-render. Do at least 2 rounds. Log each round in `docs/review_log.md`.
-9. **Deliver:** copy the final next to the source as `<name>-9k.mp4`. Never overwrite the source. Report the path, duration (before → after), LUFS, what you fixed in critique, and one line on what you'd improve next.
+9. **Deliver:** copy the final next to the source as `<name>-9k.mp4`, then run `bash scripts/archive.sh`: it saves the editable project next to the source as `<name>-9k/` (edit.json, transcript, plan, review log, scripts, real copies of the assets, the final). Always, on every delivery and every later re-render, so he can change the film months later. Never overwrite the source. Report both paths, duration (before → after), LUFS, what you fixed in critique, and one line on what you'd improve next.
 
 ## Quick reference
 
@@ -51,6 +51,7 @@ Timing: on Apple Silicon, ingest takes ~20 s and cut ~60 s per 100 s of 4K. Over
 | "A 2 s pop on the keyword is enough" | The graphic holds for the sentence and builds on his words. Bare face for 5 s reads as unfinished: read the coverage line |
 | "Same box, same corner, it's consistent" | It's flat. Alternate sides and change layout: column, lower third, title, split panel, band |
 | "I'll build captions by hand in a canvas scene" | `captions.mjs` + `overlay.js` already do RTL/LTR runs, proclitic splits and keyword pills |
+| "The mp4 is delivered, the project in ~/films is enough" | He looks next to the video, not in ~/films. No `<name>-9k/` folder there means the delivery isn't finished |
 | "I rendered it, so it's done" | It isn't done until you've looked at the review sheets for 2 rounds |
 | "Sample the logo's colours / use Inter" | 9k tokens only. Logos are monochrome by default (`iconColor: 'brand'` only if he asks) |
 
