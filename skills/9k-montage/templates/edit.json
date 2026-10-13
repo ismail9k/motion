@@ -8,5 +8,5 @@
   "captions": { "style": "word", "maxWords": 4, "fixes": {}, "keywords": [], "hide": [] },
   "graphics": [],
   "grade": { "contrast": 1.04, "saturation": 1.05 },
-  "audio": { "lufs": -14, "voice": { "clean": true }, "sfx": { "auto": true, "gain": 1 }, "cues": [], "extra": [], "music": null }
+  "audio": { "lufs": "source", "voice": { "clean": false }, "sfx": { "auto": true, "gain": 1 }, "cues": [], "extra": [], "music": null }
 }

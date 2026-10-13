@@ -71,7 +71,8 @@ Write tech names the way the brand writes them: `Vue.js`, `Node.js`, `TypeScript
 
 - **SFX** come from the components. Keep them under the voice: when the review sheet says SFX feel loud, lower `sfx.gain` to 0.6 rather than removing them.
 - **Music:** none by default under a talking head. If a track is supplied or sits next to the source, use `music` with ducking at gain 0.10–0.16, and never synthesized music.
-- **Loudness:** −14 LUFS integrated, true peak ≤ −1.5 dB. `compose.mjs` prints both, so quote them in the delivery.
+- **Voice:** always the original. No denoise, no high-pass filter, no compression, and no loudness normalization: the mix stays at the source level. Don't set `voice.clean` or a numeric `lufs` unless he asks.
+- **Loudness:** `compose.mjs` prints the integrated LUFS and the peak of the final mix. Quote them in the delivery next to the source's own level, so he can see the voice was not changed.
 
 ## 7. Review rubric (score 1–10, fix the 3 worst, at least 2 rounds)
 

@@ -1,10 +1,10 @@
 // node scripts/compose.mjs [--from 10 --to 20] [--half] [--out out/final-1080x1920.mp4]
-// Final assembly: camera (zoom/focus) over the cut footage → light grade → b-roll → 9k overlay PNGs,
-// voice cleaned + synthesized SFX + extra SFX files + ducked music → two-pass loudness → MP4.
+// Final assembly: camera (zoom/focus) over the cut footage → light grade → split-layout slide → b-roll → 9k overlay PNGs,
+// source voice (untouched by default) + synthesized SFX + extra SFX files + ducked music → MP4 at the source level (or two-pass loudness when audio.lufs is a number).
 //
 // edit.json → grade: { contrast: 1.04, saturation: 1.05, gamma: 1, brightness: 0 } | false
 //             broll: [{ t, dur, src: "assets/clip.mp4", from: 0 }]                  (full-frame video inserts)
-//             audio: { lufs: -14, voice: { clean: true }, sfx: { auto: true, gain: 1 },
+//             audio: { lufs: 'source', voice: { clean: false }, sfx: { auto: true, gain: 1 },
 //                      cues: [{ t, type: "whoosh" | "pop" | "click" | "thump" | "ding" | "tick", gain }],
 //                      extra: [{ t, src: "assets/notification.mp3", gain: 0.8 }],
 //                      music: { src: "assets/bed.mp3", gain: 0.14, duck: true, fadeOut: 1.5 } | null }
@@ -19,7 +19,7 @@ const edit = JSON.parse(readFileSync('edit.json', 'utf8'));
 const cut = JSON.parse(readFileSync('work/cut.json', 'utf8'));
 const cuts = JSON.parse(readFileSync('work/cuts.json', 'utf8'));
 const F = { w: 1080, h: 1920, fps: 30, ...(edit.format || {}) };
-const DUR = cut.duration, A = { lufs: -14, voice: { clean: true }, sfx: { auto: true, gain: 1 }, cues: [], extra: [], music: null, ...(edit.audio || {}) };
+const DUR = cut.duration, A = { lufs: 'source', voice: { clean: false }, sfx: { auto: true, gain: 1 }, cues: [], extra: [], music: null, ...(edit.audio || {}) };
 const FROM = +arg('from', 0), TO = +arg('to', DUR), HALF = argv.includes('--half');
 const OUT = arg('out', FROM || TO < DUR || HALF ? `out/preview-${FROM}-${TO}.mp4` : `out/final-${F.w}x${F.h}.mp4`);
 mkdirSync('out', { recursive: true });
@@ -40,7 +40,7 @@ execFileSync('node', ['lib/audio.mjs', 'work/cues.json', 'work/sfx.wav'], { stdi
 // ---- 2. audio mix → work/mix.wav (measured for loudness before the final encode) ---------------------
 const ain = ['-i', 'work/cut.mov', '-i', 'work/sfx.wav'];
 const af = [];
-af.push(`[0:a]${A.voice?.clean === false ? 'anull' : 'highpass=f=75,afftdn=nf=-28,acompressor=threshold=-21dB:ratio=3:attack=8:release=120:makeup=2'},aresample=48000[voice]`);
+af.push(`[0:a]${A.voice?.clean !== true ? 'anull' : 'highpass=f=75,afftdn=nf=-28,acompressor=threshold=-21dB:ratio=3:attack=8:release=120:makeup=2'},aresample=48000[voice]`);
 const duck = A.music?.src && A.music.duck !== false;
 if (duck) af.push('[voice]asplit=2[vo][key]');
 af.push(`[1:a]volume=${(A.sfx.gain ?? 1) * 0.5},aresample=48000[sfx]`);
@@ -60,8 +60,13 @@ if (A.music?.src) {
 af.push(`${mixIn.join('')}amix=inputs=${mixIn.length}:normalize=0:duration=first,alimiter=limit=0.89:level=disabled[mix]`);
 writeFileSync('work/audio.graph', af.join(';\n'));
 ff([...ain, '-/filter_complex', 'work/audio.graph', '-map', '[mix]', '-t', String(DUR), '-c:a', 'pcm_s16le', 'work/mix.wav']);
-const L = JSON.parse(ffLog(['-i', 'work/mix.wav', '-af', `loudnorm=I=${+A.lufs}:TP=-1.5:LRA=11:print_format=json`, '-f', 'null', '-']).match(/^\{[\s\S]*?^\}/m)[0]);
-const loud = `loudnorm=I=${A.lufs}:TP=-1.5:LRA=11:measured_I=${L.input_i}:measured_TP=${L.input_tp}:measured_LRA=${L.input_lra}:measured_thresh=${L.input_thresh}:offset=${L.target_offset}:linear=true,aresample=48000`;
+// The creator's voice is the reference: by default nothing normalizes it, so the mix keeps the source level.
+// A numeric audio.lufs opts in to two-pass loudness (the gain can push peaks into the limiter).
+let loud = 'aresample=48000';
+if (Number.isFinite(+A.lufs)) {
+  const L = JSON.parse(ffLog(['-i', 'work/mix.wav', '-af', `loudnorm=I=${+A.lufs}:TP=-1.5:LRA=11:print_format=json`, '-f', 'null', '-']).match(/^\{[\s\S]*?^\}/m)[0]);
+  loud = `loudnorm=I=${A.lufs}:TP=-1.5:LRA=11:measured_I=${L.input_i}:measured_TP=${L.input_tp}:measured_LRA=${L.input_lra}:measured_thresh=${L.input_thresh}:offset=${L.target_offset}:linear=true,aresample=48000`;
+}
 
 // ---- 3. picture: camera → grade → b-roll → overlay ----------------------------------------------------
 const vin = ['-i', 'work/cut.mov', '-framerate', String(F.fps), '-i', 'work/overlay/%06d.png', '-i', 'work/mix.wav'];

@@ -87,8 +87,8 @@ Every component asks for its own SFX (pop, whoosh, type ticks, ding), timed to i
 
 | Key | Default | Notes |
 |---|---|---|
-| `lufs` | `-14` | The Shorts/YouTube target, measured over the final mix |
-| `voice.clean` | `true` | Highpass 75 Hz, light denoise (afftdn −28), 3:1 compression |
+| `lufs` | `"source"` | Keeps the source level: no loudness normalization. A number (e.g. `-14`) normalizes the final mix to that target, and only when he asks for it |
+| `voice.clean` | `false` | His voice stays as recorded. `true` adds highpass 75 Hz, light denoise (afftdn −28) and 3:1 compression, and only when he asks for it |
 | `sfx.auto` / `sfx.gain` | `true` / `1` | Component cues, plus a whoosh on each camera snap of ≥ 0.08 |
 | `cues` | `[]` | Extra synth cues `{t, type, gain}`: `click pop thump whoosh tick ding type` |
 | `extra` | `[]` | Sound files `{t, src, gain}`, e.g. `assets/notification.mp3` on "someone asked me" |

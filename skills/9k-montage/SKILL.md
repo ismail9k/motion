@@ -7,7 +7,7 @@ description: Use when a creator hands over a video of themselves to edit in the 
 
 ## Overview
 
-You are the editor. A video goes in, and a finished 9k montage comes out: tightened cut, jump-cut punch-ins, word-by-word captions, 9k motion graphics on the right words, SFX, loudness, end card. The pipeline is scripted. Your job is the judgment: what to cut, what the words really are, which graphic goes on which word, and an honest critique of your own frames.
+You are the editor. A video goes in, and a finished 9k montage comes out: tightened cut, jump-cut punch-ins, word-by-word captions, 9k motion graphics on the right words, SFX, end card. His voice stays as recorded: no clean-up, at the source level. The pipeline is scripted. Your job is the judgment: what to cut, what the words really are, which graphic goes on which word, and an honest critique of your own frames.
 
 **One gate only.** You ask the user nothing before the plan. Read the footage, decide, write `docs/plan.md`, and wait for "OK". After the OK, render, self-review, fix, and deliver without asking again.
 
@@ -61,5 +61,7 @@ Timing: on Apple Silicon, ingest takes ~20 s and cut ~60 s per 100 s of 4K. Over
 | Latin label overflowing a panel in an RTL film | Components fit labels automatically. Shorten the label if it still overflows |
 | The burned-in hook line peeks out under the new hook | `hook.cover` = the exact rect, padded by 1–2 % |
 | Synth music under his voice | No music unless a track is supplied, and then ducked |
-| 16:9 graphics centred on his chest | Give them a side column: `x: 0.79, w: 0.34` (craft §4) |
+| Cleaning or normalizing his voice | The voice is always the original: no denoise, high-pass or compression, at the source level. `voice.clean` and a numeric `lufs` only when he asks |
+| 16:9 graphics centred on his chest | Give them a side column, `side: "start"` / `"end"`, alternating (craft §4) |
+| A card open and empty, waiting for its line | Open it ≤ 1 s before `at`, or give the wait to another graphic |
 | Editing edit.json and re-running only compose | Check the re-run table in edit-spec.md (captions/graphics need `render-overlay.mjs`) |
