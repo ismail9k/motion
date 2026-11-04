@@ -52,16 +52,18 @@ if (duck) af.push('[voice]asplit=2[vo][key]');
 af.push(`[1:a]volume=${(A.sfx.gain ?? 1) * 0.5},aresample=48000[sfx]`);
 const mixIn = [duck ? '[vo]' : '[voice]', '[sfx]'];
 let idx = 2;
+// Every edit.json value that lands in a filter string is forced to a finite number first (no filtergraph injection).
+const num = (v, d = 0) => (Number.isFinite(+v) && v !== null && v !== '' ? +v : d);
 for (const x of A.extra) {
-  ain.push('-i', x.src); const ms = Math.round(x.t * 1000);
-  af.push(`[${idx}:a]aresample=48000,adelay=${ms}|${ms},volume=${x.gain ?? 0.8}[x${idx}]`); mixIn.push(`[x${idx}]`); idx++;
+  ain.push('-i', String(x.src)); const ms = Math.max(0, Math.round(num(x.t) * 1000));
+  af.push(`[${idx}:a]aresample=48000,adelay=${ms}|${ms},volume=${num(x.gain, 0.8)}[x${idx}]`); mixIn.push(`[x${idx}]`); idx++;
 }
 for (const c of sampled) { // sound-pack samples, same timing and relative gain as the synth cue they replace
-  const p = PACK[c.type], ms = Math.round(Math.max(0, c.t - (p.lead ?? 0)) * 1000), s0 = p.start ?? 0;
-  const len = c.type === 'type' && c.text ? [...c.text].length / (c.cps || 16) + 0.04 : p.trim;
+  const p = PACK[c.type], ms = Math.round(Math.max(0, num(c.t) - num(p.lead)) * 1000), s0 = Math.max(0, num(p.start));
+  const len = c.type === 'type' && c.text ? [...String(c.text)].length / num(c.cps, 16) + 0.04 : num(p.trim) || null;
   const trim = len ? `atrim=${s0}:${(s0 + len).toFixed(3)},asetpts=PTS-STARTPTS,afade=t=out:st=${Math.max(0, len - 0.06).toFixed(3)}:d=0.06,` : '';
-  ain.push('-i', p.src);
-  af.push(`[${idx}:a]${trim}aresample=48000,adelay=${ms}|${ms},volume=${((p.gain ?? 1) * (c.gain ?? 0.4) * (A.sfx.gain ?? 1) * 0.5).toFixed(4)}[x${idx}]`); mixIn.push(`[x${idx}]`); idx++;
+  ain.push('-i', String(p.src));
+  af.push(`[${idx}:a]${trim}aresample=48000,adelay=${ms}|${ms},volume=${(num(p.gain, 1) * num(c.gain, 0.4) * num(A.sfx.gain, 1) * 0.5).toFixed(4)}[x${idx}]`); mixIn.push(`[x${idx}]`); idx++;
 }
 if (A.music?.src) {
   ain.push('-stream_loop', '-1', '-i', A.music.src);
@@ -94,9 +96,10 @@ const grade = G ? `${eqOn ? `,eq=contrast=${G.contrast}:gamma=${G.gamma}:brightn
 const vf = [`[0:v]${cameraFilter(cam, cut.w, cut.h, F.w, F.h)}${grade}${shiftFilter(edit.graphics, edit.dir, F.w, F.h)},setsar=1[cam]`];
 let last = '[cam]', vi = 3;
 for (const b of edit.broll || []) {
-  vin.push('-ss', String(b.from || 0), '-t', String(b.dur), '-i', b.src);
-  vf.push(`[${vi}:v]fps=${F.fps},scale=${F.w}:${F.h}:force_original_aspect_ratio=increase,crop=${F.w}:${F.h},setpts=PTS-STARTPTS+${b.t}/TB[b${vi}]`);
-  vf.push(`${last}[b${vi}]overlay=enable='between(t,${b.t},${b.t + b.dur})':eof_action=pass[v${vi}]`); last = `[v${vi}]`; vi++;
+  const bt = num(b.t), bd = num(b.dur, 2);
+  vin.push('-ss', String(num(b.from)), '-t', String(bd), '-i', String(b.src));
+  vf.push(`[${vi}:v]fps=${F.fps},scale=${F.w}:${F.h}:force_original_aspect_ratio=increase,crop=${F.w}:${F.h},setpts=PTS-STARTPTS+${bt}/TB[b${vi}]`);
+  vf.push(`${last}[b${vi}]overlay=enable='between(t,${bt},${bt + bd})':eof_action=pass[v${vi}]`); last = `[v${vi}]`; vi++;
 }
 // The overlay PNGs are sRGB: convert them with the right matrix (swscale defaults to BT.601) before blending.
 vf.push(HDR ? `[1:v]format=rgba,lut3d=file=work/sdr2hdr.cube,scale=out_color_matrix=bt2020:out_range=tv,format=yuva444p10le[ov]`

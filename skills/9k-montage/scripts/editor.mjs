@@ -55,8 +55,15 @@ function serveFile(req, res, file) {
   createReadStream(file).pipe(res);
 }
 
+// Local only: bound to 127.0.0.1, Host must be this port on localhost (blocks DNS rebinding), and every POST must come
+// from this page as JSON (a foreign site can't send that without a CORS preflight, which this server never answers).
+const HOSTS = new Set([`localhost:${PORT}`, `127.0.0.1:${PORT}`]);
+const sameOrigin = (req) => { const o = req.headers.origin; return !o || o === `http://localhost:${PORT}` || o === `http://127.0.0.1:${PORT}`; };
+
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x'), p = decodeURIComponent(url.pathname);
+  if (!HOSTS.has(req.headers.host || '')) { res.writeHead(403); return res.end('forbidden host'); }
+  if (req.method !== 'GET' && req.method !== 'HEAD' && (!sameOrigin(req) || !/^application\/json\b/.test(req.headers['content-type'] || ''))) return send(res, 403, { error: 'forbidden' });
   try {
     if (p === '/api/state') {
       const m = JSON.parse(readFileSync('montage.json', 'utf8'));
@@ -86,4 +93,4 @@ http.createServer(async (req, res) => {
     if (!file.startsWith(ROOT + path.sep) && file !== ROOT) { res.writeHead(403); return res.end(); }
     serveFile(req, res, file);
   } catch (x) { send(res, 500, { error: String(x.stack || x) }); }
-}).listen(PORT, () => console.log(`9k montage editor → http://localhost:${PORT}`));
+}).listen(PORT, '127.0.0.1', () => console.log(`9k montage editor → http://localhost:${PORT}`));

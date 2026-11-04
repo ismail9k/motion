@@ -156,7 +156,7 @@ function change(fn, { silent } = {}) {
 }
 function queueSave() { dirty = true; status('saving…'); clearTimeout(saveT); saveT = setTimeout(save, 500); }
 async function save() {
-  const r = await fetch('/api/save', { method: 'POST', body: JSON.stringify(E) }); const j = await r.json();
+  const r = await fetch('/api/save', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(E) }); const j = await r.json();
   if (!r.ok) return status(j.error, 'err');
   D = j.data; await O.init(g, D); cam = events(E.camera, D.cuts); dirty = false; drawTimeline();
   status((j.needsCut ? 'saved · cut settings changed: Render will re-cut · ' : 'saved · ') + (j.log.split('\n').find((l) => l.startsWith('graphics on')) || ''), j.needsCut ? 'warn' : '');
@@ -344,7 +344,7 @@ stage.addEventListener('pointermove', (e) => { if (e.buttons || !D || performanc
 // ---- jobs ------------------------------------------------------------------------------
 async function startJob(kind) {
   if (dirty) { clearTimeout(saveT); await save(); }
-  const r = await fetch('/api/' + kind, { method: 'POST' }); const j = await r.json(); if (!r.ok) return status(j.error, 'err');
+  const r = await fetch('/api/' + kind, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }); const j = await r.json(); if (!r.ok) return status(j.error, 'err');
   $('#jobTitle').textContent = kind === 'render' ? 'Rendering…' : 'Delivering…'; $('#drawer').classList.add('on'); pollJob();
 }
 async function pollJob() {
