@@ -1,4 +1,4 @@
-// node scripts/render-overlay.mjs [--from 0 --to DUR] [--stills 0.5 | --at 1.2,4.8] [--workers 4]
+// node scripts/render-overlay.mjs [--from 0 --to DUR] [--stills 0.5 | --at 1.2,4.8] [--workers 4] [--data-only]
 // 1. Builds work/edit.data.js (edit.json + caption chunks + icon paths) for overlay.html.
 // 2. Writes work/captions.json and work/cues.auto.json (the SFX every graphic asks for), and prints graphic coverage.
 // 3. Renders the transparent overlay as a PNG sequence → work/overlay/000000.png … (one per output frame),
@@ -42,7 +42,7 @@ for (const x of edit.graphics || []) if (x.src && !images[x.src]) {
 }
 const data = {
   format: F, dir: edit.dir || 'ltr', theme: edit.theme || 'dark', duration: DUR,
-  captions: capOpts.style === 'off' ? null : chunks, captionStyle: { size: capOpts.size, y: capOpts.y },
+  captions: capOpts.style === 'off' ? null : chunks, captionStyle: { size: capOpts.size, y: capOpts.y }, faceBottom: edit.faceBottom ?? null,
   graphics: (edit.graphics || []).map((x) => ({ dur: 2.5, ...x })), icons, images,
   cuts: JSON.parse(readFileSync('work/cuts.json', 'utf8')),
 };
@@ -57,6 +57,9 @@ writeFileSync('work/edit.data.js', 'window.EDIT = ' + JSON.stringify(data) + ';\
   if (talk - end > GAP) bare.push([end, talk]);
   console.log(`graphics on screen: ${Math.round((on / talk) * 100)} % of ${f(talk)} s of talk` + (bare.length ? ` · bare stretches over ${GAP} s: ${bare.map(([a, b]) => `${f(a)}–${f(b)}`).join(', ')}` : ' · no bare stretch over 4 s'));
 }
+
+// --data-only: the editor (scripts/editor.mjs) only needs work/edit.data.js rebuilt
+if (argv.includes('--data-only')) process.exit(0);
 
 // ---- browser ------------------------------------------------------------------------
 const browser = await chromium.launch();

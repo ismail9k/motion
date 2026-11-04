@@ -10,6 +10,7 @@ Open `work/contact.png` and note these four things in the plan:
 2. **Burned-in text.** A hook caption or subtitles already in the export. Find its rect and time range by grabbing stills (`node lib/sheet.mjs work/cut.mov /tmp/x.png --at 0.5,2,4,6`). Then hide it with a `hook` that has `cover`, or with a `mask`. Add to `captions.hide` only the stretch where the burned text says the same words he is speaking, because captions would just repeat it. Once he moves past that line, captions run as normal: they sit at 0.72 H, below the cover panel.
 3. **Inserts already in the source.** Photos, screenshots and b-roll the creator placed. A 1-per-second sheet finds them: `node lib/sheet.mjs work/cut.mov /tmp/s.png --every 1 --cols 14 --tile 128`. Put their ranges in `captions.hide` and keep your graphics off them.
 4. **Framing changes.** A rough cut often alternates framings already. Ingest finds those cuts (`work/scenes.json`), and the camera alternates on them too.
+5. **Dynamic range.** iPhone footage is HDR: HEVC 10-bit, BT.2020, HLG, usually with a Dolby Vision layer. Check `color_transfer` (`arib-std-b67` = HLG, `smpte2084` = PQ). Everything after must stay 10-bit with the same tags, and the sRGB graphics must be mapped into HLG/PQ (SDR white at 203 cd/m², 75 % HLG), or the delivery looks dull, banded and off-brand next to his original. `cut.mjs` and `compose.mjs` do this automatically (`lib/hdr.mjs`); a HyperFrames render must be set up to output 10-bit HDR too. Dolby Vision can't survive an edit: say so if he compares on an iPhone.
 
 ## 2. The cut (raw takes)
 
@@ -49,6 +50,7 @@ Write tech names the way the brand writes them: `Vue.js`, `Node.js`, `TypeScript
 - **Change the layout, not just the content.** A film where every graphic is the same box in the same corner goes flat by the third one. In 16:9 over 45 s, use at least four of these: side column, the other side column, `lowerThird`, a full-frame `title`, the split `panel`, `band`, `nino`. Use `title` once, where he names the video or the course. Use `panel` once, on the longest enumeration (a lifecycle, a stack, steps): it holds for the whole list, 6–10 s.
 - **Choose by what is said:**
   - names a tool → `chips`
+  - walks through N tools / services one by one → `tracker` to introduce them, a `stack` card per item, `tracker` with `checkAt` as the recap
   - compares two → `versus`
   - says a number → `stat`
   - lists reasons → `list`
@@ -56,10 +58,14 @@ Write tech names the way the brand writes them: `Vue.js`, `Node.js`, `TypeScript
   - "not X but Y" → `retype`
   - a punchline or insult → `emoji` (`^_^ x_x o_o >‿<`, not `-_-`), beside the head
   - "think about it" → `nino thinking`
-  - the thesis line, once → `band`
-- **Climax.** One `band` (green, ≤ 1.2 s) on the single most important word, with a camera `snap` to 1.25–1.32 on the same frame and a `cut` back on the next jump cut.
-- **Hook.** The first 2 s must show something that isn't just the face. If the export already has a burned hook line, restyle it with `hook` + `cover`. Otherwise type the strongest line of the video at the top.
+  - the thesis line, once → `band` (`underline` on its key word)
+  - the spoken CTA ("comment X") → `cta`
+- **Climax.** One `band` (green, ≤ 1.2 s) on the single most important word, with a camera `push` to ~1.12 that lands on the same word (start it ~0.4 s early, `dur` 0.45) and eases back (`push`, `dur` 0.6) after the band.
+- **Hook.** The first 2 s must show something that isn't just the face. If the export already has a burned hook line, restyle it with `hook` + `cover`. Otherwise type the strongest line of the video at the top, or, for a money / price hook, use `stamp` (giant line + stamped bill) below the chin.
 - **End.** Use `tail: 3.2` and an `endcard` (CTA + handle) unless the video ends on a punchline that should cut to black.
+- **Set `faceBottom`.** Read the chin line off a punched-in still and set it (≈ 0.45–0.48 for a seated 9:16 head). He judges a graphic that touches his face as covering it.
+- **Sit low.** Given the editor, he moved every graphic of his first film down by 0.07 H: he wants them clearly off the chin, sitting just above the caption band, not tucked under the face. Start there.
+- **Tall graphics climb onto the chin.** A graphic that would cross the caption band is lifted above it, so a tall card or list ends up on his chin, worst on a punch-in. If the stills show it, lower the captions (`captions.y` 0.745) and shrink the graphic (`size`), rather than accept it.
 - **Placement.** Use the `mid` zone (below the chin) by default. Use `top` only when the face is low or the camera is pushed out. Never put a graphic over the mouth.
 - **16:9 placement.** A centred talking head fills the middle of a landscape frame, and every component centres on it by default. Put graphics in a side column instead: `side: "start"` or `"end"` with `y` ≈ 0.42. Alternate the side from one graphic to the next, so the eye crosses his face each time. A column never crosses the edge of his head: keep `w` ≤ 0.36, and check the stills at the punched-in zoom, where the head is wider. The lower third, the title, the panel, Nino, the band and the end card place themselves.
 - **16:9 captions.** Use `style: "phrase"` at `y: 0.9`, `size: 1.5`: a full line along the bottom edge, clear of the side columns and his chest. Word-by-word chunks at 0.84 are for shorts.
@@ -69,15 +75,18 @@ Write tech names the way the brand writes them: `Vue.js`, `Node.js`, `TypeScript
 
 ## 5. Camera rhythm
 
-- `camera.auto` handles jump cuts. Add `snap` keys only on emphasis words, about one every 15–20 s, so they keep their force.
+- `camera.auto` handles jump cuts. Keep `punch` subtle (1.05–1.07): a 1.12 jump on every cut reads as lurching.
+- Emphasis is an eased `push`, not a `snap`: the camera is a heavy element, so ease in over ~0.45 s, landing ON the word (start it 0.4 s early), and ease back out over ~0.6 s. One every 15–20 s. Reserve `snap` for a single hard comic beat, if any.
 - A `push` (slow 1.0→1.08 over 3–4 s) suits the reflective close of a video.
 - Check the punch-in framing doesn't crop the head: `focus[1]` sits near the eyes, and `punch` stays ≤ 1.15 when the head is already near the top.
 
 ## 6. Sound
 
-- **SFX** come from the components. Keep them under the voice: when the review sheet says SFX feel loud, lower `sfx.gain` to 0.6 rather than removing them.
+- **SFX** come from the components (each graphic asks for its own cues, timed to its animation). Play them as **real samples**, not the synth: pull files with the `add-sfx` skill (Woven catalog: `fast-whoosh`, `pop-hand`, `mouse-click-2`, `notification-ding`, `dull-thud`, `keyboard-typing-realistic`, …) into `assets/sfx/` and map cue types to them in `audio.sfx.pack`. Set each `lead` to the sample's onset so the hit lands on the frame, and level each `gain` to the synth it replaces.
+- **SFX levels.** Measure, don't trust a sample's default volume (they range over 20 dB). Hits sit 8–14 dB under his voice; the stamp and the climax ~6 dB under. Typing is the easiest to lose (often 25 dB too quiet raw). To measure, subtract the voice from the mix: the mix is late by the limiter's lookahead, so align the two first (cross-correlate on a bare stretch), then read 20 ms RMS peaks at each cue.
+- **Two signature touches** that worked: a short record-needle scratch on a jab at a rival tool ("ليه لسه بتستخدموا Vercel"), and a low bass hit layered under the climax band. One of each per film.
 - **Music:** none by default under a talking head. If a track is supplied or sits next to the source, use `music` with ducking at gain 0.10–0.16, and never synthesized music.
-- **Voice:** always the original. No denoise, no high-pass filter, no compression, and no loudness normalization: the mix stays at the source level. Don't set `voice.clean` or a numeric `lufs` unless he asks.
+- **Voice:** always the original. No denoise, no high-pass filter, no compression, and no loudness normalization: the mix stays at the source level. Don't set `voice.clean` or a numeric `lufs` unless he asks. Voice effects (echo on the hook, a phone filter on an aside) were offered and he declined: don't add them unless he asks.
 - **Loudness:** `compose.mjs` prints the integrated LUFS and the peak of the final mix. Quote them in the delivery next to the source's own level, so he can see the voice was not changed.
 
 ## 7. Review rubric (score 1–10, fix the 3 worst, at least 2 rounds)

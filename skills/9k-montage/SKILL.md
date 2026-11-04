@@ -1,6 +1,6 @@
 ---
 name: 9k-montage
-description: Use when a creator hands over a video of themselves to edit in the 9k house style (ismail9k / 9k) — "do the montage", "edit this video", "مونتاج", "cut this", "add captions / motion graphics / zooms / SFX to my video", "package my short" — whether it's raw takes or a rough cut, a 9:16 short or 16:9 long-form. Use this instead of 9k-motion, talking-head-recut or hyperframes whenever existing talking-head footage is the input.
+description: Use when a creator hands over a video of themselves to edit in the 9k house style (ismail9k / 9k) — "do the montage", "edit this video", "مونتاج", "cut this", "add captions / motion graphics / zooms / SFX to my video", "package my short" — whether it's raw takes or a rough cut, a 9:16 short or 16:9 long-form. Use this instead of 9k-motion whenever existing talking-head footage is the input: it owns the editing judgment, and HyperFrames builds and renders what you see.
 ---
 
 # 9k Montage
@@ -12,6 +12,23 @@ You are the editor. A video goes in, and a finished 9k montage comes out: tighte
 **One gate only.** You ask the user nothing before the plan. Read the footage, decide, write `docs/plan.md`, and wait for "OK". After the OK, render, self-review, fix, and deliver without asking again.
 
 Styling comes from 9k-motion (`references/brand.md` there: colors, type, springs). This skill does not run 9k-motion's questionnaire: a montage has its brief inside the footage.
+
+## Engine: HyperFrames first, don't build it yourself
+
+He decided (Nov 2026): new montages are built on **HyperFrames**, not on code you write. Don't write new graphic components, editors, renderers or audio tools. Use what HyperFrames ships:
+
+| Need | Use |
+|---|---|
+| Graphics and captions over his footage, preview, render | `hyperframes` (the entry skill; it routes designed overlays on talking-head footage to `talking-head-recut`), `hyperframes-core`, `hyperframes-cli` |
+| Any named visual (chart, terminal, counter, glitch, card…) | `hyperframes-registry` **before** composing one by hand |
+| Motion | `hyperframes-animation`, in 9k springs and tokens (`../9k-motion/references/brand.md`) |
+| He wants to edit it himself | `hyperframes-studio`, not a custom editor |
+| SFX | `add-sfx` (Woven catalog, `woven-sfx` MCP: `sfx_search` → `sfx_pull`), or `media-use` |
+| Mix, ducking, effects on a track | `hyperframes-audio` |
+
+This skill still owns the judgment: read the footage (§1), cut on measured silence (`ingest.mjs` + `cut.mjs` can still prepare the tightened, 10-bit footage), fix the transcript, pick one graphic per sentence, set the face line, the plan gate, the critique rubric, 9k tokens only, and delivery + archive next to the source. When a 9k component (stack, tracker, stamp, cta…) has no registry block, compose it as a HyperFrames scene in 9k tokens, and tell him which ones you had to compose.
+
+The scripted pipeline below (`edit.json` → `overlay.js` → `compose.mjs`, `editor.mjs`) stays for **re-edits of projects made with it**: a `<name>-9k/` folder with an `edit.json`. Fix bugs in it, but don't grow it with new features.
 
 ## Workflow
 
@@ -29,12 +46,15 @@ Styling comes from 9k-motion (`references/brand.md` there: colors, type, springs
 
 | Need | Where |
 |---|---|
-| Every edit.json key, all 18 graphic types | `references/edit-spec.md` |
+| Every edit.json key, all 22 graphic types | `references/edit-spec.md` |
 | Cut rules, whisper fixes, graphic choice and placement, sound, review rubric | `references/craft.md` |
 | 9k colors, type, springs, Nino, wordmark | `<skill>/../9k-motion/references/brand.md` |
+| Hand him the editor ("let me edit it myself") | `node scripts/editor.mjs` → http://localhost:5174: preview with camera zoom, draggable timeline, graphic / caption / camera panels, Render and Deliver. Writes edit.json directly |
 | Live preview of overlay over footage | open `overlay.html` in Chrome (scrub the video) |
 | Quick preview of one range | `node scripts/compose.mjs --from 15 --to 25 --half` |
 | Labelled frames from any video | `node lib/sheet.mjs <video> out.png --every 1` |
+| Real SFX instead of the synth | `audio.sfx.pack` in edit.json, with files pulled through `add-sfx` (Woven) into `assets/sfx/` (craft §6) |
+| Is the source HDR? | `ffprobe -v error -select_streams v:0 -show_entries stream=color_transfer -of default=nw=1:nk=1 <video>` → `arib-std-b67` (HLG) or `smpte2084` (PQ) |
 
 Timing: on Apple Silicon, ingest takes ~20 s and cut ~60 s per 100 s of 4K. Overlay takes ~6 s, and compose ~50 s.
 
@@ -54,6 +74,9 @@ Timing: on Apple Silicon, ingest takes ~20 s and cut ~60 s per 100 s of 4K. Over
 | "The mp4 is delivered, the project in ~/films is enough" | He looks next to the video, not in ~/films. No `<name>-9k/` folder there means the delivery isn't finished |
 | "I rendered it, so it's done" | It isn't done until you've looked at the review sheets for 2 rounds |
 | "Sample the logo's colours / use Inter" | 9k tokens only. Logos are monochrome by default (`iconColor: 'brand'` only if he asks) |
+| "I'll write a component / an editor / a mixer for this" | He said don't build it yourself. HyperFrames registry, Studio and audio first (see Engine) |
+| "It's an iPhone clip, 8-bit H.264 is fine" | iPhone footage is HDR (HLG + Dolby Vision). 8-bit bands and dulls it, and he notices. Stay 10-bit HLG end to end (craft §1) |
+| "I'll add echo / phone filter on his voice for flavour" | He turned voice effects down. His voice stays as recorded unless he asks for an effect |
 
 ## Common mistakes
 
@@ -68,3 +91,7 @@ Timing: on Apple Silicon, ingest takes ~20 s and cut ~60 s per 100 s of 4K. Over
 | 16:9 graphics centred on his chest | Give them a side column, `side: "start"` / `"end"`, alternating (craft §4) |
 | A card open and empty, waiting for its line | Open it ≤ 1 s before `at`, or give the wait to another graphic |
 | Editing edit.json and re-running only compose | Check the re-run table in edit-spec.md (captions/graphics need `render-overlay.mjs`) |
+| `eq=saturation=1.05` to add colour | In ffmpeg 8 it *lowers* chroma, and `eq` drops 10-bit to 8. `compose.mjs` uses `hue=s` for saturation; never add `eq` back on HDR |
+| Judging HDR colour from the review stills | The stills show the raw HLG signal and look flat and grey. Compare numbers (`signalstats` SATAVG / YAVG on the same frame of source and output), or watch on an HDR screen |
+| Re-rendering after he edited in the editor and losing his moves | His drags are `dx` / `dy` in edit.json. Render from edit.json as it is; never regenerate graphics over his offsets |
+| SFX as loud as the voice | Hits sit 8–14 dB under the voice, the climax ~6 dB under. Measure them (craft §6), don't guess from the sample's default volume |

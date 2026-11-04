@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>9k Montage Editor</title>
+<link rel="stylesheet" href="node_modules/@fontsource/ibm-plex-sans/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/ibm-plex-sans/600.css">
+<link rel="stylesheet" href="node_modules/@fontsource/ibm-plex-sans/700.css">
+<link rel="stylesheet" href="node_modules/@fontsource/ibm-plex-serif/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/ibm-plex-mono/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/ibm-plex-mono/600.css">
+<link rel="stylesheet" href="node_modules/@fontsource/ibm-plex-sans-arabic/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/ibm-plex-sans-arabic/600.css">
+<link rel="stylesheet" href="node_modules/@fontsource/ibm-plex-sans-arabic/700.css">
+<style>
+  :root { --bg:#0F0F0F; --surface:#1A1A1A; --raised:#242424; --sunken:#141414; --border:#404040; --text:#F5F5F5; --muted:#999;
+    --green:#166434; --green-t:#2FB161; --accent:#E85A02; --mono:"IBM Plex Mono", ui-monospace, monospace; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.4 "IBM Plex Sans", "IBM Plex Sans Arabic", sans-serif; }
+  button, select, input, textarea { font: inherit; color: var(--text); background: var(--sunken); border: 1px solid var(--border); border-radius: 6px; }
+  button { padding: 5px 10px; cursor: pointer; background: var(--raised); }
+  button:hover { border-color: #666; } button.primary { background: var(--green); border-color: var(--green); font-weight: 600; }
+  button.accent { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+  button:disabled { opacity: .45; cursor: default; }
+  input, select { padding: 4px 6px; } input[type=number] { width: 78px; font-family: var(--mono); }
+  textarea { width: 100%; padding: 8px; font-family: var(--mono); font-size: 12px; resize: vertical; tab-size: 2; }
+  .app { display: grid; grid-template-rows: auto 1fr auto; height: 100vh; }
+  header { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 14px; margin: 0; font-weight: 700; } header h1 b { color: var(--accent); }
+  #status { color: var(--muted); font-family: var(--mono); font-size: 12px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #status.err { color: #F39191; } #status.warn { color: #F4C871; }
+  main { display: grid; grid-template-columns: auto 1fr; min-height: 0; }
+  .left { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px; border-right: 1px solid var(--border); min-height: 0; }
+  .stage { position: relative; overflow: hidden; background: #000; border-radius: 8px; flex: none; }
+  .stage video { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .transport { display: flex; align-items: center; gap: 6px; }
+  #tc { font-family: var(--mono); min-width: 120px; text-align: center; }
+  .hint { color: var(--muted); font-size: 11px; text-align: center; max-width: 380px; }
+  .right { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  .tabs { display: flex; gap: 2px; padding: 8px 12px 0; border-bottom: 1px solid var(--border); }
+  .tabs button { border: 0; border-radius: 6px 6px 0 0; background: transparent; color: var(--muted); padding: 7px 12px; }
+  .tabs button.on { background: var(--surface); color: var(--text); }
+  .pane { display: none; padding: 12px 14px; overflow: auto; min-height: 0; flex: 1; }
+  .pane.on { display: block; }
+  .row { display: flex; align-items: center; gap: 8px; margin: 6px 0; flex-wrap: wrap; }
+  .row label { color: var(--muted); min-width: 64px; }
+  .gl { width: 100%; border-collapse: collapse; } .gl td { padding: 5px 6px; border-bottom: 1px solid #262626; cursor: pointer; vertical-align: top; }
+  .gl tr:hover td { background: #1c1c1c; } .gl tr.sel td { background: #1F3327; }
+  .gl .ty { font-family: var(--mono); font-size: 11px; white-space: nowrap; } .gl .tm { font-family: var(--mono); color: var(--muted); white-space: nowrap; }
+  .chip { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+  .err-box { color: #F39191; font-family: var(--mono); font-size: 12px; white-space: pre-wrap; }
+  .words { line-height: 2; direction: rtl; font-size: 15px; }
+  .words span { cursor: pointer; padding: 2px 3px; border-radius: 4px; } .words span:hover { background: var(--raised); }
+  .words span.now { background: var(--accent); color: #000; }
+  .fx { display: grid; grid-template-columns: 1fr 1fr auto; gap: 4px; } .fx input { width: 100%; }
+  /* timeline */
+  .tl { border-top: 1px solid var(--border); background: var(--sunken); }
+  .tlbar { display: flex; align-items: center; gap: 10px; padding: 4px 12px; color: var(--muted); font-size: 11px; }
+  .tlscroll { overflow-x: auto; overflow-y: hidden; position: relative; }
+  .tlinner { position: relative; height: 150px; }
+  .ruler { position: absolute; left: 0; right: 0; top: 0; height: 18px; border-bottom: 1px solid #2a2a2a; }
+  .ruler i { position: absolute; top: 0; height: 18px; border-left: 1px solid #333; font: 10px var(--mono); color: #777; padding-left: 3px; font-style: normal; }
+  .lane-label { position: sticky; left: 0; }
+  .blk { position: absolute; height: 20px; border-radius: 4px; font: 11px var(--mono); color: #fff; padding: 2px 6px; overflow: hidden; white-space: nowrap; cursor: grab; border: 1px solid rgba(255,255,255,.18); }
+  .blk.sel { outline: 2px solid var(--accent); z-index: 2; }
+  .blk .h { position: absolute; right: 0; top: 0; bottom: 0; width: 7px; cursor: ew-resize; }
+  .cap { position: absolute; height: 14px; background: #2a2a2a; border-radius: 3px; font-size: 10px; color: #aaa; overflow: hidden; white-space: nowrap; padding: 0 4px; direction: rtl; }
+  .cutm { position: absolute; top: 18px; bottom: 0; border-left: 1px dashed #555; pointer-events: none; }
+  .camk { position: absolute; width: 10px; height: 10px; transform: translateX(-5px) rotate(45deg); background: var(--green-t); cursor: pointer; }
+  .ph { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); pointer-events: none; z-index: 5; }
+  .drawer { position: fixed; right: 14px; bottom: 14px; width: 520px; max-height: 50vh; display: none; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 25px rgba(0,0,0,.5); z-index: 20; }
+  .drawer.on { display: flex; } .drawer header { border: 0; } .drawer pre { margin: 0; padding: 8px 12px; overflow: auto; font: 11px/1.45 var(--mono); color: #ccc; white-space: pre-wrap; }
+</style>
+<body>
+<div class="app">
+  <header>
+    <h1>9k <b>montage</b> editor</h1>
+    <span id="status">loading…</span>
+    <button id="undo" title="Undo (⌘Z)">Undo</button><button id="redo" title="Redo (⇧⌘Z)">Redo</button>
+    <button id="render" class="primary">Render</button>
+    <button id="deliver" class="accent" title="Copy the last render next to the source and save the project there">Deliver</button>
+  </header>
+  <main>
+    <div class="left">
+      <div class="stage" id="stage"><video id="v" src="work/cut.proxy.mp4" playsinline preload="auto"></video><canvas id="c"></canvas></div>
+      <div class="transport">
+        <button id="back" title="−1 s (⇧←)">−1s</button><button id="prevf" title="−1 frame (←)">‹</button>
+        <button id="play" title="Play / pause (space)">Play</button>
+        <button id="nextf" title="+1 frame (→)">›</button><button id="fwd" title="+1 s (⇧→)">+1s</button>
+        <span id="tc">0.00 s</span>
+      </div>
+      <div class="hint">Preview shows footage, camera zoom, graphics and captions (no SFX). Render bakes the final video.</div>
+    </div>
+    <div class="right">
+      <div class="tabs" id="tabs">
+        <button data-p="gfx" class="on">Graphic</button><button data-p="list">All graphics</button>
+        <button data-p="caps">Captions</button><button data-p="cam">Camera</button><button data-p="words">Words</button><button data-p="json">edit.json</button>
+      </div>
+      <div class="pane on" id="p-gfx"></div>
+      <div class="pane" id="p-list"></div>
+      <div class="pane" id="p-caps"></div>
+      <div class="pane" id="p-cam"></div>
+      <div class="pane" id="p-words"><div class="hint" style="text-align:start;max-width:none;margin-bottom:8px">Click a word to jump there. ⇧-click sets the selected graphic's start to that word.</div><div class="words" id="words"></div></div>
+      <div class="pane" id="p-json"><div class="row"><button id="jsonApply" class="primary">Apply</button><span class="hint">The whole file. Apply replaces it.</span></div><textarea id="jsonTa" rows="40" spellcheck="false"></textarea><div class="err-box" id="jsonErr"></div></div>
+    </div>
+  </main>
+  <div class="tl">
+    <div class="tlbar"><span>Timeline: click to seek · drag a block to move · drag its right edge to resize · Alt while dragging snaps to words · ◆ = camera key</span><span style="flex:1"></span>zoom <input type="range" id="zoom" min="6" max="80" value="14"></div>
+    <div class="tlscroll" id="tls"><div class="tlinner" id="tl"></div></div>
+  </div>
+</div>
+<div class="drawer" id="drawer"><header><b id="jobTitle">Render</b><span style="flex:1"></span><button id="openFinal">Open video</button><button id="closeDrawer">Close</button></header><pre id="jobLog"></pre></div>
+
+<script src="lib/motion.js"></script>
+<script src="lib/brand.js"></script>
+<script src="lib/overlay.js"></script>
+<script type="module">
+import { events, at } from './lib/camera.mjs';
+const $ = (s) => document.querySelector(s), el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
+const round = (x) => Math.round(x * 100) / 100;
+const COLORS = { hook: '#7a3b0f', stamp: '#7a3b0f', chips: '#1f4d7a', tracker: '#1f4d7a', stack: '#166434', versus: '#5b2a7a', stat: '#7a5b0f', card: '#2A486F', list: '#2a6f6a',
+  retype: '#6f2a4a', emoji: '#555', nino: '#3d6b2a', band: '#166434', quote: '#444', code: '#333', image: '#6a5a2a', lowerThird: '#2A486F', title: '#7a3b0f', panel: '#2a6f6a', endcard: '#166434', mask: '#333', cta: '#166434' };
+const TEMPLATES = {
+  card: { dur: 3, title: 'Title', badge: 'label', at: 0.1 }, chips: { dur: 3, items: [{ label: 'Name', icon: 'github' }] }, list: { dur: 4, title: 'Title', items: ['one', 'two'], at: [0.3, 0.9] },
+  stat: { dur: 2.5, value: '90%', label: 'label' }, retype: { dur: 3, from: 'old', to: 'new', hold: 0.9, strikeAt: 0.25 }, emoji: { dur: 1.3, text: '^_^', x: 0.2, y: 0.26 },
+  band: { dur: 1.1, text: 'line', underline: '' }, versus: { dur: 4, a: { label: 'A' }, b: { label: 'B' }, at: [0.2, 1.2], pick: 'a', pickAt: 2.5 }, nino: { dur: 2, expression: 'happy', corner: 'end' },
+  quote: { dur: 3, text: 'quote' }, code: { dur: 3, code: 'npm i', title: 'terminal' }, hook: { dur: 2.5, text: 'Hook line' }, title: { dur: 3, text: 'Title', kicker: 'kicker' },
+  stamp: { dur: 2.5, kicker: 'kicker', line: 'Zero $', accent: '$', lineAt: 1, bill: [['Item', '$0']], total: '$0.00', stamp: 'FREE', stampAt: 1.4 },
+  tracker: { dur: 3, items: [{ label: 'One' }, { label: 'Two' }], at: [0.1, 0.3] }, stack: { dur: 4, n: 1, total: 6, title: 'Name', titleAt: 0.4, rows: [{ text: 'row', at: 1 }], free: 'FREE', freeAt: 1 },
+  cta: { dur: 3, text: 'اكتب 9k في الكومنتات', pill: '9k', line: '', buttonAt: 0.3, pillAt: 0.8, nino: true, captions: false }, endcard: { dur: 3.2, cta: 'CTA', handle: '@ismail9k' },
+  mask: { dur: 2, rect: [0.1, 0.1, 0.8, 0.1] }, image: { dur: 3, src: 'assets/x.png', fit: 'card' },
+};
+
+let E, D, WORDS = [], cam, sel = -1, hist = [], fut = [], saveT = null, dirty = false;
+const v = $('#v'), cv = $('#c'), g = cv.getContext('2d');
+const status = (s, cls = '') => { const n = $('#status'); n.textContent = s; n.className = cls; };
+
+// ---- data ------------------------------------------------------------------------------
+async function load() {
+  const r = await (await fetch('/api/state')).json();
+  E = r.edit; D = r.data; WORDS = r.words; window.FINAL = r.final;
+  await B.loadFonts(); await Promise.all(['400', '600', '700'].map((w) => document.fonts.load(`${w} 32px "IBM Plex Sans Arabic"`, 'عربي')));
+  cv.width = D.format.w; cv.height = D.format.h; await O.init(g, D);
+  layoutStage(); refreshAll(); status(r.needsCut ? 'cut settings changed: Render will re-cut first' : 'ready · changes save to edit.json automatically', r.needsCut ? 'warn' : '');
+  if (r.job?.running) pollJob();
+}
+const syncLocal = () => { // instant preview for graphics / camera before the server rebuilds captions + icons
+  D.graphics = (E.graphics || []).map((x) => ({ dur: 2.5, ...x })); D.captionStyle = { size: E.captions?.size, y: E.captions?.y }; D.faceBottom = E.faceBottom ?? null;
+  cam = events(E.camera, D.cuts); O.init(g, D);
+};
+function change(fn, { silent } = {}) {
+  hist.push(JSON.stringify(E)); if (hist.length > 200) hist.shift(); fut = [];
+  fn(); syncLocal(); if (!silent) refreshAll(); else { drawTimeline(); }
+  queueSave();
+}
+function queueSave() { dirty = true; status('saving…'); clearTimeout(saveT); saveT = setTimeout(save, 500); }
+async function save() {
+  const r = await fetch('/api/save', { method: 'POST', body: JSON.stringify(E) }); const j = await r.json();
+  if (!r.ok) return status(j.error, 'err');
+  D = j.data; await O.init(g, D); cam = events(E.camera, D.cuts); dirty = false; drawTimeline();
+  status((j.needsCut ? 'saved · cut settings changed: Render will re-cut · ' : 'saved · ') + (j.log.split('\n').find((l) => l.startsWith('graphics on')) || ''), j.needsCut ? 'warn' : '');
+}
+function undo() { if (!hist.length) return; fut.push(JSON.stringify(E)); E = JSON.parse(hist.pop()); syncLocal(); refreshAll(); queueSave(); }
+function redo() { if (!fut.length) return; hist.push(JSON.stringify(E)); E = JSON.parse(fut.pop()); syncLocal(); refreshAll(); queueSave(); }
+
+// ---- preview ---------------------------------------------------------------------------
+let SW, SH;
+function layoutStage() {
+  const maxH = innerHeight - 330, maxW = innerWidth * 0.4, r = D.format.w / D.format.h;
+  SH = Math.max(320, Math.min(maxH, maxW / r)); SW = SH * r;
+  Object.assign($('#stage').style, { width: SW + 'px', height: SH + 'px' }); Object.assign(v.style, { width: SW + 'px', height: SH + 'px' });
+}
+function frame() {
+  const t = v.currentTime;
+  if (cam) { // same crop math as lib/camera.mjs → cameraFilterAt, in stage pixels
+    const c = at(cam, t), z = Math.max(1, c.z), sw = SW * z, sh = SH * z;
+    const x = Math.max(0, Math.min(sw - SW, c.fx * sw - SW / 2)), y = Math.max(0, Math.min(sh - SH, c.fy * sh - SH / 2));
+    v.style.transform = `translate(${-x}px, ${-y}px) scale(${z})`;
+  }
+  if (D) O.draw(t, D);
+  $('#tc').textContent = `${t.toFixed(2)} s / ${(D?.duration || 0).toFixed(1)}`;
+  $('#ph') && ($('#ph').style.left = t * PPS + 'px');
+  if (!v.paused && $('#p-words').classList.contains('on')) markWord(t);
+  requestAnimationFrame(frame);
+}
+const seek = (t) => { v.currentTime = Math.max(0, Math.min(D.duration, t)); if (v.paused) markWord(v.currentTime); };
+const FPS = () => D?.format?.fps || 30;
+
+// ---- panes -----------------------------------------------------------------------------
+const gs = () => E.graphics || (E.graphics = []);
+const label = (x) => x.text || x.title || x.line || x.label || x.name || x.cta || (x.items ? x.items.map((i) => i.label || i).join(', ') : '') || (x.a ? `${x.a.label} vs ${x.b.label}` : '') || x.from || x.value || '';
+function refreshAll() { drawGfx(); drawList(); drawCaps(); drawCam(); drawWords(); $('#jsonTa').value = JSON.stringify(E, null, 1); drawTimeline(); }
+
+function drawGfx() {
+  const p = $('#p-gfx'); p.innerHTML = '';
+  const add = el('select', {}, el('option', { value: '', textContent: '+ Add graphic at playhead…' }), ...Object.keys(TEMPLATES).map((k) => el('option', { value: k, textContent: k })));
+  add.onchange = () => { const ty = add.value; if (!ty) return; change(() => { gs().push({ type: ty, t: round(v.currentTime), ...structuredClone(TEMPLATES[ty]) }); sortG(); sel = gs().findIndex((x) => x.type === ty && x.t === round(v.currentTime)); }); };
+  p.append(el('div', { className: 'row' }, add));
+  const x = gs()[sel];
+  if (!x) { p.append(el('p', { className: 'hint', style: 'text-align:start', textContent: 'Select a graphic on the timeline or in "All graphics" to edit it.' })); return; }
+  const num = (k, step = 0.01) => { const i = el('input', { type: 'number', step, value: x[k] ?? '' }); i.onchange = () => change(() => { x[k] = round(+i.value); if (k === 't') sortKeep(x); }); return i; };
+  const toPh = (k) => el('button', { textContent: '⟵ playhead', onclick: () => change(() => { if (k === 't') { const end = x.t + x.dur; x.t = round(v.currentTime); x.dur = round(Math.max(0.2, end - x.t)); sortKeep(x); } else x.dur = round(Math.max(0.2, v.currentTime - x.t)); }) });
+  p.append(
+    el('div', { className: 'row' }, el('b', { textContent: x.type, style: `color:${COLORS[x.type] ? '#fff' : ''}` }), el('span', { className: 'hint', textContent: `#${sel + 1} of ${gs().length}` })),
+    el('div', { className: 'row' }, el('label', { textContent: 'start' }), num('t'), toPh('t'), el('button', { textContent: 'Jump', onclick: () => seek(x.t) })),
+    el('div', { className: 'row' }, el('label', { textContent: 'duration' }), num('dur'), el('span', { className: 'hint', textContent: 'end ' }), (() => { const b = toPh('dur'); b.textContent = 'end ⟵ playhead'; return b; })(), el('span', { className: 'tm', style: 'font-family:var(--mono);color:var(--muted)', textContent: `→ ${(x.t + (x.dur ?? 2.5)).toFixed(2)} s` })),
+  );
+  const off = (k) => { const i = el('input', { type: 'number', step: 0.005, value: x[k] ?? 0 }); i.onchange = () => change(() => { x[k] = +(+i.value).toFixed(3) || undefined; }); return i; };
+  p.append(el('div', { className: 'row' }, el('label', { textContent: 'position' }), el('span', { className: 'hint' }, 'x '), off('dx'), el('span', { className: 'hint' }, 'y '), off('dy'),
+    el('button', { textContent: 'Reset position', disabled: !x.dx && !x.dy, onclick: () => change(() => { delete x.dx; delete x.dy; }) }),
+    el('span', { className: 'hint', textContent: 'or drag it in the preview (⇧ = straight line)' })));
+  const rest = { ...x }; delete rest.type; delete rest.t; delete rest.dur; delete rest.dx; delete rest.dy;
+  const ta = el('textarea', { rows: 22, spellcheck: false, value: JSON.stringify(rest, null, 2) }), err = el('div', { className: 'err-box' });
+  ta.oninput = () => { try { const o = JSON.parse(ta.value); err.textContent = ''; change(() => { for (const k of Object.keys(x)) if (!['type', 't', 'dur', 'dx', 'dy'].includes(k)) delete x[k]; Object.assign(x, o); }, { silent: true }); } catch (e) { err.textContent = e.message; } };
+  p.append(el('div', { className: 'hint', style: 'text-align:start;margin-top:10px', textContent: 'Properties (text, items, timings relative to start…). Field reference: edit-spec.md in the 9k-montage skill.' }), ta, err,
+    el('div', { className: 'row' }, el('button', { textContent: 'Duplicate', onclick: () => change(() => { const c = structuredClone(x); c.t = round(x.t + (x.dur || 2.5)); gs().push(c); sortG(); sel = gs().indexOf(c); }) }),
+      el('button', { textContent: 'Delete', onclick: () => change(() => { gs().splice(sel, 1); sel = -1; }) })));
+}
+function sortG() { const s = gs()[sel]; E.graphics.sort((a, b) => a.t - b.t); if (s) sel = E.graphics.indexOf(s); }
+function sortKeep(x) { E.graphics.sort((a, b) => a.t - b.t); sel = E.graphics.indexOf(x); }
+function select(i) { sel = i; drawGfx(); drawList(); drawTimeline(); $('#tabs [data-p=gfx]').click(); }
+
+function drawList() {
+  const t = el('table', { className: 'gl' });
+  gs().forEach((x, i) => {
+    const tr = el('tr', { className: i === sel ? 'sel' : '', onclick: () => { select(i); seek(x.t); } },
+      el('td', { className: 'tm', textContent: `${x.t.toFixed(2)}–${(x.t + (x.dur ?? 2.5)).toFixed(2)}` }),
+      el('td', { className: 'ty' }, el('span', { className: 'chip', style: `background:${COLORS[x.type] || '#555'}` }), x.type),
+      el('td', { textContent: label(x) }));
+    t.append(tr);
+  });
+  $('#p-list').replaceChildren(t);
+}
+
+function drawCaps() {
+  const c = E.captions || (E.captions = {}), p = $('#p-caps'); p.innerHTML = '';
+  const field = (k, type, attrs = {}) => { const i = el('input', { type, value: c[k] ?? '', ...attrs }); i.onchange = () => change(() => { c[k] = type === 'number' ? +i.value : i.value; }); return i; };
+  const style = el('select', {}, ...['word', 'phrase', 'off'].map((s) => el('option', { value: s, textContent: s, selected: (c.style || 'word') === s })));
+  style.onchange = () => change(() => { c.style = style.value; });
+  const kw = el('input', { value: (c.keywords || []).join(', '), style: 'flex:1;min-width:240px' }); kw.onchange = () => change(() => { c.keywords = kw.value.split(',').map((s) => s.trim()).filter(Boolean); });
+  p.append(el('div', { className: 'row' }, el('label', { textContent: 'style' }), style, el('label', { textContent: 'y' }), field('y', 'number', { step: 0.005 }), el('label', { textContent: 'size' }), field('size', 'number', { step: 0.05, placeholder: '2.05' })),
+    el('div', { className: 'row' }, el('label', { textContent: 'keywords' }), kw), el('div', { className: 'hint', style: 'text-align:start', textContent: 'Keywords get the orange pill while spoken (comma separated).' }));
+  const hide = el('input', { value: JSON.stringify(c.hide || []), style: 'flex:1;font-family:var(--mono)' }); hide.onchange = () => { try { const h = JSON.parse(hide.value); change(() => { c.hide = h; }); } catch { status('hide: not valid JSON, e.g. [[0, 2.6]]', 'err'); } };
+  p.append(el('div', { className: 'row' }, el('label', { textContent: 'hide' }), hide, el('button', { textContent: '+ 2 s at playhead', onclick: () => change(() => { (c.hide ||= []).push([round(v.currentTime), round(v.currentTime + 2)]); }) })));
+  p.append(el('h4', { textContent: 'Word fixes (what Whisper heard → what to show)', style: 'margin:16px 0 6px' }));
+  const fx = el('div', { className: 'fx' }); const entries = Object.entries(c.fixes || {});
+  const rebuild = () => change(() => { c.fixes = Object.fromEntries([...fx.querySelectorAll('.fxrow')].map((r) => [r.children[0].value, r.children[1].value]).filter(([a]) => a)); });
+  const row = (a = '', b = '') => { const r = el('div', { className: 'fxrow', style: 'display:contents' }, el('input', { value: a, dir: 'auto', onchange: rebuild }), el('input', { value: b, dir: 'auto', onchange: rebuild }), el('button', { textContent: '×', onclick: () => { r.remove(); rebuild(); } })); return r; };
+  entries.forEach(([a, b]) => fx.append(row(a, b)));
+  p.append(fx, el('div', { className: 'row' }, el('button', { textContent: '+ Add fix', onclick: () => fx.append(row()) })));
+  p.append(el('h4', { textContent: 'Caption chunks', style: 'margin:16px 0 6px' }), el('div', { className: 'words', style: 'line-height:1.9' }, ...(D.captions || []).map((ch) => el('div', { style: 'cursor:pointer', onclick: () => seek(ch.s) }, el('span', { className: 'tm', style: 'font-family:var(--mono);color:var(--muted);direction:ltr;display:inline-block;width:60px', textContent: ch.s.toFixed(2) }), ' ', ch.tokens.map((t) => t.w).join(' ')))));
+}
+
+function drawCam() {
+  const c = E.camera || (E.camera = {}), p = $('#p-cam'); p.innerHTML = '';
+  const n = (k, step, def) => { const i = el('input', { type: 'number', step, value: c[k] ?? def }); i.onchange = () => change(() => { c[k] = +i.value; }); return i; };
+  const auto = el('input', { type: 'checkbox', checked: c.auto !== false }); auto.onchange = () => change(() => { c.auto = auto.checked; });
+  const face = el('input', { type: 'number', step: 0.005, value: E.faceBottom ?? '' }); face.onchange = () => change(() => { E.faceBottom = face.value === '' ? null : +face.value; });
+  p.append(el('div', { className: 'row' }, el('label', { textContent: 'jump cuts' }), auto, el('span', { className: 'hint', textContent: 'alternate base ↔ punch on every cut' })),
+    el('div', { className: 'row' }, el('label', { textContent: 'base' }), n('base', 0.01, 1), el('label', { textContent: 'punch' }), n('punch', 0.01, 1.12)),
+    el('div', { className: 'row' }, el('label', { textContent: 'face line' }), face, el('span', { className: 'hint', textContent: 'no graphic starts above this (fraction of height)' })));
+  p.append(el('h4', { textContent: 'Camera keys', style: 'margin:16px 0 6px' }), el('div', { className: 'hint', style: 'text-align:start', textContent: 'push = eased zoom over dur · cut = hard · snap = quick spring. z = zoom (1 = full frame).' }));
+  const t = el('table', { className: 'gl' });
+  (c.keys || []).forEach((k, i) => {
+    const inp = (f, step) => { const x = el('input', { type: 'number', step, value: k[f] ?? '' }); x.onchange = () => change(() => { k[f] = x.value === '' ? undefined : +x.value; c.keys.sort((a, b) => a.t - b.t); }); return x; };
+    const ease = el('select', {}, ...['push', 'cut', 'snap'].map((s) => el('option', { value: s, textContent: s, selected: (k.ease || 'snap') === s }))); ease.onchange = () => change(() => { k.ease = ease.value; });
+    t.append(el('tr', {}, el('td', {}, inp('t', 0.01)), el('td', {}, el('span', { className: 'hint' }, 'z '), inp('z', 0.01)), el('td', {}, ease), el('td', {}, el('span', { className: 'hint' }, 'dur '), inp('dur', 0.05)),
+      el('td', {}, el('button', { textContent: 'Jump', onclick: () => seek(k.t) }), ' ', el('button', { textContent: '×', onclick: () => change(() => c.keys.splice(i, 1)) }))));
+  });
+  p.append(t, el('div', { className: 'row' }, el('button', { textContent: '+ Zoom in at playhead', onclick: () => change(() => { (c.keys ||= []).push({ t: round(v.currentTime), z: 1.1, ease: 'push', dur: 0.45 }); c.keys.sort((a, b) => a.t - b.t); }) }),
+    el('button', { textContent: '+ Zoom out at playhead', onclick: () => change(() => { (c.keys ||= []).push({ t: round(v.currentTime), z: 1, ease: 'push', dur: 0.6 }); c.keys.sort((a, b) => a.t - b.t); }) })));
+}
+
+function drawWords() {
+  $('#words').replaceChildren(...WORDS.flatMap((w, i) => { const s = el('span', { textContent: w.w, title: w.s.toFixed(2) + ' s',
+    onclick: (e) => { if (e.shiftKey && gs()[sel]) change(() => { gs()[sel].t = round(w.s); sortKeep(gs()[sel]); }); seek(w.s); } }); s.dataset.i = i; return [s, ' ']; }));
+}
+function markWord(t) { const ws = $('#words').children; for (const s of ws) s.classList.toggle('now', t >= WORDS[s.dataset.i].s && t < WORDS[s.dataset.i].e); }
+
+// ---- timeline --------------------------------------------------------------------------
+let PPS = 14;
+function drawTimeline() {
+  if (!D) return;
+  const tl = $('#tl'), dur = D.duration; tl.innerHTML = ''; tl.style.width = Math.max($('#tls').clientWidth, dur * PPS + 40) + 'px';
+  const ruler = el('div', { className: 'ruler' }); const step = PPS < 10 ? 10 : PPS < 25 ? 5 : 1;
+  for (let s = 0; s <= dur; s += step) ruler.append(el('i', { style: `left:${s * PPS}px`, textContent: s + 's' }));
+  tl.append(ruler);
+  for (const c of D.cuts || []) tl.append(el('div', { className: 'cutm', style: `left:${c * PPS}px` }));
+  // graphics in lanes
+  const lanes = []; const top0 = 24;
+  gs().forEach((x, i) => {
+    const d = x.dur ?? 2.5; let L = lanes.findIndex((end) => end <= x.t + 0.001); if (L < 0) { L = lanes.length; lanes.push(0); } lanes[L] = x.t + d;
+    const b = el('div', { className: 'blk' + (i === sel ? ' sel' : ''), style: `left:${x.t * PPS}px;width:${Math.max(6, d * PPS)}px;top:${top0 + L * 24}px;background:${COLORS[x.type] || '#555'}`, title: `${x.type} ${x.t.toFixed(2)}–${(x.t + d).toFixed(2)} ${label(x)}` },
+      `${x.type} · ${label(x)}`, el('div', { className: 'h' }));
+    b.onpointerdown = (e) => dragBlock(e, i, e.target.classList.contains('h'));
+    tl.append(b);
+  });
+  const capTop = top0 + Math.max(1, lanes.length) * 24 + 6;
+  for (const ch of D.captions || []) tl.append(el('div', { className: 'cap', style: `left:${ch.s * PPS}px;width:${Math.max(4, (ch.end - ch.s) * PPS - 1)}px;top:${capTop}px`, title: ch.tokens.map((t) => t.w).join(' ') }, ch.tokens.map((t) => t.w).join(' ')));
+  for (const k of E.camera?.keys || []) { const m = el('div', { className: 'camk', style: `left:${k.t * PPS}px;top:${capTop + 22}px`, title: `camera ${k.ease || 'snap'} → ${k.z} at ${k.t}` }); m.onclick = (e) => { e.stopPropagation(); seek(k.t); $('#tabs [data-p=cam]').click(); }; tl.append(m); }
+  tl.style.height = capTop + 40 + 'px';
+  tl.append(el('div', { className: 'ph', id: 'ph', style: `left:${v.currentTime * PPS}px` }));
+}
+$('#tl').addEventListener('pointerdown', (e) => { if (e.target.closest('.blk, .camk')) return; const r = $('#tl').getBoundingClientRect(); const go = (ev) => seek((ev.clientX - r.left) / PPS); go(e);
+  const mv = (ev) => go(ev), up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); }; addEventListener('pointermove', mv); addEventListener('pointerup', up); });
+const snapWord = (t) => WORDS.reduce((best, w) => (Math.abs(w.s - t) < Math.abs(best - t) ? w.s : best), t);
+function dragBlock(e, i, resize) {
+  e.preventDefault(); e.stopPropagation(); const x = gs()[i], x0 = e.clientX, t0 = x.t, d0 = x.dur ?? 2.5; let moved = false;
+  hist.push(JSON.stringify(E)); fut = []; sel = i;
+  const mv = (ev) => { const dt = (ev.clientX - x0) / PPS; if (Math.abs(ev.clientX - x0) > 2) moved = true; if (!moved) return;
+    if (resize) { let end = t0 + d0 + dt; if (ev.altKey) end = snapWord(end); x.dur = round(Math.max(0.2, end - t0)); }
+    else { let t = Math.max(0, t0 + dt); if (ev.altKey) t = snapWord(t); x.t = round(t); seek(x.t); }
+    syncLocal(); drawTimeline(); };
+  const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); if (moved) { sortKeep(x); refreshAll(); queueSave(); } else { hist.pop(); select(i); seek(x.t); } };
+  addEventListener('pointermove', mv); addEventListener('pointerup', up);
+}
+$('#zoom').oninput = (e) => { PPS = +e.target.value; drawTimeline(); };
+
+// ---- drag graphics in the preview: press on a graphic, move it; writes dx / dy (fractions of the frame) -------------
+const stage = $('#stage');
+const toFrame = (e) => { const r = stage.getBoundingClientRect(); return [((e.clientX - r.left) / SW) * D.format.w, ((e.clientY - r.top) / SH) * D.format.h]; };
+const hitAt = (e) => { const i = O.hit(v.currentTime, D, ...toFrame(e)); O.draw(v.currentTime, D); return i; };
+stage.addEventListener('pointerdown', (e) => {
+  if (!D || e.button !== 0) return;
+  const i = hitAt(e); if (i < 0) return;
+  e.preventDefault(); v.pause();
+  const x = gs()[i], cx0 = e.clientX, cy0 = e.clientY, dx0 = x.dx || 0, dy0 = x.dy || 0; let moved = false;
+  hist.push(JSON.stringify(E)); fut = []; sel = i; stage.style.cursor = 'grabbing';
+  const mv = (ev) => {
+    let ddx = (ev.clientX - cx0) / SW, ddy = (ev.clientY - cy0) / SH;
+    if (!moved && Math.hypot(ev.clientX - cx0, ev.clientY - cy0) < 3) return; moved = true;
+    if (ev.shiftKey) { if (Math.abs(ddx) > Math.abs(ddy)) ddy = 0; else ddx = 0; }
+    x.dx = +(dx0 + ddx).toFixed(3) || undefined; x.dy = +(dy0 + ddy).toFixed(3) || undefined;
+    syncLocal(); status(`moving ${x.type} · x ${(x.dx || 0).toFixed(3)} · y ${(x.dy || 0).toFixed(3)}`);
+  };
+  const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); stage.style.cursor = '';
+    if (moved) { refreshAll(); queueSave(); } else hist.pop(); select(i); };
+  addEventListener('pointermove', mv); addEventListener('pointerup', up);
+});
+let hoverT = 0; // cursor feedback: 'move' over a graphic (hit test at most every 90 ms)
+stage.addEventListener('pointermove', (e) => { if (e.buttons || !D || performance.now() - hoverT < 90) return; hoverT = performance.now(); stage.style.cursor = hitAt(e) >= 0 ? 'move' : ''; });
+
+// ---- jobs ------------------------------------------------------------------------------
+async function startJob(kind) {
+  if (dirty) { clearTimeout(saveT); await save(); }
+  const r = await fetch('/api/' + kind, { method: 'POST' }); const j = await r.json(); if (!r.ok) return status(j.error, 'err');
+  $('#jobTitle').textContent = kind === 'render' ? 'Rendering…' : 'Delivering…'; $('#drawer').classList.add('on'); pollJob();
+}
+async function pollJob() {
+  $('#render').disabled = $('#deliver').disabled = true;
+  const j = await (await fetch('/api/job')).json(); const pre = $('#jobLog'); pre.textContent = j.log; pre.scrollTop = pre.scrollHeight; $('#drawer').classList.add('on');
+  if (j.running) return setTimeout(pollJob, 1000);
+  $('#render').disabled = $('#deliver').disabled = false;
+  $('#jobTitle').textContent = `${j.kind === 'render' ? 'Render' : 'Deliver'} ${j.ok ? 'finished' : 'failed'}`; status(j.ok ? `${j.kind} finished` : `${j.kind} failed — see log`, j.ok ? '' : 'err');
+}
+$('#render').onclick = () => startJob('render'); $('#deliver').onclick = () => startJob('deliver');
+$('#closeDrawer').onclick = () => $('#drawer').classList.remove('on');
+$('#openFinal').onclick = () => open('/' + window.FINAL + '?t=' + Date.now(), '_blank');
+
+// ---- misc ------------------------------------------------------------------------------
+$('#tabs').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; for (const x of $('#tabs').children) x.classList.toggle('on', x === b);
+  for (const p of document.querySelectorAll('.pane')) p.classList.toggle('on', p.id === 'p-' + b.dataset.p); if (b.dataset.p === 'json') $('#jsonTa').value = JSON.stringify(E, null, 1); };
+$('#jsonApply').onclick = () => { try { const o = JSON.parse($('#jsonTa').value); $('#jsonErr').textContent = ''; change(() => { E = o; }); } catch (e) { $('#jsonErr').textContent = e.message; } };
+$('#play').onclick = () => (v.paused ? v.play() : v.pause()); v.onplay = () => ($('#play').textContent = 'Pause'); v.onpause = () => ($('#play').textContent = 'Play');
+$('#prevf').onclick = () => seek(v.currentTime - 1 / FPS()); $('#nextf').onclick = () => seek(v.currentTime + 1 / FPS());
+$('#back').onclick = () => seek(v.currentTime - 1); $('#fwd').onclick = () => seek(v.currentTime + 1);
+$('#undo').onclick = undo; $('#redo').onclick = redo;
+addEventListener('keydown', (e) => {
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName);
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !typing) { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') { e.preventDefault(); clearTimeout(saveT); save(); return; }
+  if (typing) return;
+  if (e.key === ' ') { e.preventDefault(); $('#play').click(); }
+  else if (e.key === 'ArrowLeft') seek(v.currentTime - (e.shiftKey ? 1 : 1 / FPS()));
+  else if (e.key === 'ArrowRight') seek(v.currentTime + (e.shiftKey ? 1 : 1 / FPS()));
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && gs()[sel]) change(() => { gs().splice(sel, 1); sel = -1; });
+});
+addEventListener('resize', () => { if (D) { layoutStage(); drawTimeline(); } });
+addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); } });
+load().then(() => { syncLocal(); requestAnimationFrame(frame); }).catch((e) => status('failed to load: ' + e.message, 'err'));
+</script>
+</body>
+</html>

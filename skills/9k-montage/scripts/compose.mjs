@@ -4,7 +4,9 @@
 //
 // edit.json → grade: { contrast: 1.04, saturation: 1.05, gamma: 1, brightness: 0 } | false
 //             broll: [{ t, dur, src: "assets/clip.mp4", from: 0 }]                  (full-frame video inserts)
-//             audio: { lufs: 'source', voice: { clean: false }, sfx: { auto: true, gain: 1 },
+//             audio: { lufs: 'source', voice: { clean: false }, sfx: { auto: true, gain: 1, pack: { whoosh: { src, gain, lead, start } … } },
+//                      (pack: play a sample file instead of the synth for that cue type; gain matches the synth's level,
+//                       lead = the sample's onset in s so the hit lands on t, start/trim for "type" cues cut to the text's length)
 //                      cues: [{ t, type: "whoosh" | "pop" | "click" | "thump" | "ding" | "tick", gain }],
 //                      extra: [{ t, src: "assets/notification.mp3", gain: 0.8 }],
 //                      music: { src: "assets/bed.mp3", gain: 0.14, duck: true, fadeOut: 1.5 } | null }
@@ -12,6 +14,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { events, cameraFilter, shiftFilter } from '../lib/camera.mjs';
 import { ffLog } from '../lib/media.mjs';
+import { kind as hdrKind, writeLut, tags as hdrTags } from '../lib/hdr.mjs';
 
 const argv = process.argv;
 const arg = (k, d) => { const i = argv.indexOf('--' + k); return i > 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d; };
@@ -34,7 +37,10 @@ if (A.sfx.auto !== false) {
   for (const e of cam.ev) if (e.ease === 'snap' && Math.abs(e.z - e.z0) >= 0.08) cues.push({ t: e.t, type: 'whoosh', gain: 0.25 });
 }
 cues.push(...A.cues);
-writeFileSync('work/cues.json', JSON.stringify({ dur: DUR, music: false, sfx: cues.filter((c) => c.t >= 0 && c.t < DUR) }, null, 1));
+const PACK = A.sfx.pack || {};
+const inRange = cues.filter((c) => c.t >= 0 && c.t < DUR);
+const sampled = inRange.filter((c) => PACK[c.type]?.src && existsSync(PACK[c.type].src)); // played from files in the mix below
+writeFileSync('work/cues.json', JSON.stringify({ dur: DUR, music: false, sfx: inRange.filter((c) => !sampled.includes(c)) }, null, 1));
 execFileSync('node', ['lib/audio.mjs', 'work/cues.json', 'work/sfx.wav'], { stdio: 'inherit' });
 
 // ---- 2. audio mix → work/mix.wav (measured for loudness before the final encode) ---------------------
@@ -49,6 +55,13 @@ let idx = 2;
 for (const x of A.extra) {
   ain.push('-i', x.src); const ms = Math.round(x.t * 1000);
   af.push(`[${idx}:a]aresample=48000,adelay=${ms}|${ms},volume=${x.gain ?? 0.8}[x${idx}]`); mixIn.push(`[x${idx}]`); idx++;
+}
+for (const c of sampled) { // sound-pack samples, same timing and relative gain as the synth cue they replace
+  const p = PACK[c.type], ms = Math.round(Math.max(0, c.t - (p.lead ?? 0)) * 1000), s0 = p.start ?? 0;
+  const len = c.type === 'type' && c.text ? [...c.text].length / (c.cps || 16) + 0.04 : p.trim;
+  const trim = len ? `atrim=${s0}:${(s0 + len).toFixed(3)},asetpts=PTS-STARTPTS,afade=t=out:st=${Math.max(0, len - 0.06).toFixed(3)}:d=0.06,` : '';
+  ain.push('-i', p.src);
+  af.push(`[${idx}:a]${trim}aresample=48000,adelay=${ms}|${ms},volume=${((p.gain ?? 1) * (c.gain ?? 0.4) * (A.sfx.gain ?? 1) * 0.5).toFixed(4)}[x${idx}]`); mixIn.push(`[x${idx}]`); idx++;
 }
 if (A.music?.src) {
   ain.push('-stream_loop', '-1', '-i', A.music.src);
@@ -71,20 +84,32 @@ if (Number.isFinite(+A.lufs)) {
 // ---- 3. picture: camera → grade → b-roll → overlay ----------------------------------------------------
 const vin = ['-i', 'work/cut.mov', '-framerate', String(F.fps), '-i', 'work/overlay/%06d.png', '-i', 'work/mix.wav'];
 const G = edit.grade === false ? null : { contrast: 1.04, saturation: 1.05, gamma: 1, brightness: 0, ...(edit.grade || {}) };
-const vf = [`[0:v]${cameraFilter(cam, cut.w, cut.h, F.w, F.h)}${G ? `,eq=contrast=${G.contrast}:saturation=${G.saturation}:gamma=${G.gamma}:brightness=${G.brightness}` : ''}${shiftFilter(edit.graphics, edit.dir, F.w, F.h)},setsar=1[cam]`];
+// HDR footage (HLG / PQ) stays 10-bit: graphics go through an sRGB → HDR LUT, and the encode is 10-bit HEVC with the tags.
+const HDR = hdrKind('work/cut.mov');
+if (HDR) { writeLut('work/sdr2hdr.cube', HDR); console.log(`HDR (${HDR}): 10-bit, graphics mapped to BT.2020 ${HDR}, SDR white 203 cd/m²`); }
+// Grade: saturation through hue (eq's saturation lowers chroma in ffmpeg 8, and eq drops 10-bit to 8). eq only for
+// contrast / gamma / brightness, and never on HDR (it would quantize the picture to 8-bit).
+const eqOn = G && !HDR && (G.contrast !== 1 || G.gamma !== 1 || G.brightness !== 0);
+const grade = G ? `${eqOn ? `,eq=contrast=${G.contrast}:gamma=${G.gamma}:brightness=${G.brightness}` : ''}${G.saturation !== 1 ? `,hue=s=${G.saturation}` : ''}` : '';
+const vf = [`[0:v]${cameraFilter(cam, cut.w, cut.h, F.w, F.h)}${grade}${shiftFilter(edit.graphics, edit.dir, F.w, F.h)},setsar=1[cam]`];
 let last = '[cam]', vi = 3;
 for (const b of edit.broll || []) {
   vin.push('-ss', String(b.from || 0), '-t', String(b.dur), '-i', b.src);
   vf.push(`[${vi}:v]fps=${F.fps},scale=${F.w}:${F.h}:force_original_aspect_ratio=increase,crop=${F.w}:${F.h},setpts=PTS-STARTPTS+${b.t}/TB[b${vi}]`);
   vf.push(`${last}[b${vi}]overlay=enable='between(t,${b.t},${b.t + b.dur})':eof_action=pass[v${vi}]`); last = `[v${vi}]`; vi++;
 }
-vf.push(`${last}[1:v]overlay=format=auto:shortest=0,format=yuv420p${HALF ? `,scale=${F.w / 2}:${F.h / 2}` : ''}[vout]`);
+// The overlay PNGs are sRGB: convert them with the right matrix (swscale defaults to BT.601) before blending.
+vf.push(HDR ? `[1:v]format=rgba,lut3d=file=work/sdr2hdr.cube,scale=out_color_matrix=bt2020:out_range=tv,format=yuva444p10le[ov]`
+  : `[1:v]format=rgba,scale=out_color_matrix=bt709:out_range=tv,format=yuva444p[ov]`);
+vf.push(`${last}[ov]overlay=format=${HDR ? 'yuv420p10' : 'yuv420'}:shortest=0,format=${HDR ? 'yuv420p10le' : 'yuv420p'}${HALF ? `,scale=${F.w / 2}:${F.h / 2}` : ''}[vout]`);
 vf.push(`[2:a]${loud}[aout]`);
 writeFileSync('work/video.graph', vf.join(';\n'));
 console.log(`composing ${FROM}–${TO} s → ${OUT}…`);
 ff([...vin, '-/filter_complex', 'work/video.graph', '-map', '[vout]', '-map', '[aout]',
   ...(FROM ? ['-ss', String(FROM)] : []), '-t', String(TO - FROM), '-r', String(F.fps),
-  '-c:v', 'libx264', '-preset', HALF ? 'veryfast' : 'medium', '-crf', HALF ? '24' : '18', '-pix_fmt', 'yuv420p',
+  ...(HDR ? ['-c:v', 'libx265', '-preset', HALF ? 'veryfast' : 'medium', '-crf', HALF ? '24' : '17', '-pix_fmt', 'yuv420p10le', '-tag:v', 'hvc1',
+    '-x265-params', `log-level=error:repeat-headers=1:colorprim=bt2020:transfer=${HDR === 'pq' ? 'smpte2084' : 'arib-std-b67'}:colormatrix=bt2020nc:range=limited`, ...hdrTags(HDR)]
+    : ['-c:v', 'libx264', '-preset', HALF ? 'veryfast' : 'medium', '-crf', HALF ? '24' : '18', '-pix_fmt', 'yuv420p', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709']),
   '-c:a', 'aac', '-b:a', '256k', '-movflags', '+faststart', OUT]);
 const r128 = ffLog(['-i', OUT, '-af', 'ebur128=peak=true', '-f', 'null', '-']).split('\n').filter((l) => /I:|Peak:/.test(l)).slice(-2).join(' ').replace(/\s+/g, ' ').trim();
 console.log(`→ ${OUT} · ${r128}`);

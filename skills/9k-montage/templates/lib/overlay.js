@@ -5,6 +5,7 @@
 //   x / w: centre and width as fractions of W · side: 'start' | 'end' = the 16:9 side column (x 0.79 / 0.21, w 0.34)
 //   kicker: a small tag above the graphic, on screen from its first frame (the label the build hangs under)
 //   dim: 0..0.6  darken the footage behind it · sfx: false to mute its auto sound
+//   dx / dy: move the whole graphic by a fraction of W / H (what dragging it in the editor sets)
 (function (g) {
   const { clamp, lerp, sp, tween, typed, retype, caretOn, ease9k } = M;
   let G, W, H, R, DIR, PORTRAIT, ICONS = {}, IMAGES = {};
@@ -15,12 +16,13 @@
   // A seated talking head fills ~0.12–0.45 H, so the default graphic band (mid) starts below the chin at 0.46 H
   // and captions sit at 0.72 H. Override per film with zone/y after looking at work/contact.png.
   // Graphics never grow into the caption band: anything that would cross its top is lifted (not when captions are off).
-  let CAP_TOP = 0.655;
+  let CAP_TOP = 0.655, FACE = null; // FACE: edit.json faceBottom — no graphic (kicker included) starts above it
   // KICK: room kept above the graphic for its kicker tag · TOPY: where that tag goes (the first zoneY of a graphic)
   let KICK = 0, TOPY = null;
   function zoneY(p, h0 = 0) {
     const h = h0 + KICK;
-    const lift = (y) => (p.captions === false ? y : Math.max(H * 0.08, Math.min(y, CAP_TOP * H - h - rem(0.6))));
+    const floor = FACE != null && !p.overFace ? FACE * H : H * 0.08;
+    const lift = (y) => Math.max(floor, p.captions === false ? y : Math.min(y, CAP_TOP * H - h - rem(0.6)));
     const z = p.zone || 'mid';
     const P = { top: 0.10, mid: 0.46, center: 0.5 - h / 2 / H, low: 0.58 };
     const L = { top: 0.08, mid: 0.30, center: 0.5 - h / 2 / H, low: 0.62 };
@@ -305,11 +307,11 @@
       G.lineWidth = Math.max(1, R / 16); G.strokeStyle = B.F.theme.border; G.stroke();
       G.fillStyle = t < hold ? B.F.theme.text : B.F.theme.primaryText; const txt = t < hold ? p.from : rt.text;
       const w = G.measureText(txt).width; G.fillText(txt, cx(), y);
-      if (t < hold) { const s = tween(t, 0.25, 0.35); G.fillStyle = B.C.accent; const sw = w * s; G.fillRect(G.direction === 'rtl' ? cx() + w / 2 - sw : cx() - w / 2, y - size * 0.33, sw, size * 0.09); }
+      if (t < hold) { const s = tween(t, p.strikeAt ?? 0.25, 0.35); G.fillStyle = B.C.accent; const sw = w * s; G.fillRect(G.direction === 'rtl' ? cx() + w / 2 - sw : cx() - w / 2, y - size * 0.33, sw, size * 0.09); }
       if (caretOn(t, rt.typing)) { G.fillStyle = B.C.accent; const rtl = G.direction === 'rtl'; G.fillRect(rtl ? cx() - w / 2 - size * 0.16 : cx() + w / 2 + size * 0.08, y - size * 0.8, size * 0.08, size * 0.95); }
     });
     const del = [...p.from].length;
-    return [{ t: 0.25, type: 'click', gain: 0.4 }, { t: hold, type: 'type', count: del, cps: 22, gain: 0.35 }, { t: hold + del / 22, type: 'type', text: p.to, cps: 16, gain: 0.45 }];
+    return [{ t: p.strikeAt ?? 0.25, type: 'click', gain: 0.4 }, { t: hold, type: 'type', count: del, cps: 22, gain: 0.35 }, { t: hold + del / 22, type: 'type', text: p.to, cps: 16, gain: 0.45 }];
   };
 
   // ASCII emoji reaction (^_^ x_x o_o >‿<; avoid -_-, it reads as loose dashes): mono, accent, springs in without overshoot.
@@ -382,7 +384,13 @@
     const by = (p.y ?? (PORTRAIT ? 0.6 : 0.5)) * H, bh = Math.max(size * 2.2, H * (p.height ?? (PORTRAIT ? 0.15 : 0.24)));
     G.save(); G.fillStyle = B.C.primary; const hh = bh * wipe * (1 - out); G.fillRect(0, by - hh / 2, W, hh);
     G.globalAlpha *= clamp((t - 0.12) * 6) * (1 - out); fit(p.text, 700, size, W * 0.86); G.fillStyle = B.C.white; G.textAlign = 'center'; G.direction = isAr(p.text) ? 'rtl' : 'ltr';
-    G.textBaseline = 'middle'; G.fillText(p.text, W / 2, by); G.restore();
+    G.textBaseline = 'middle'; G.fillText(p.text, W / 2, by);
+    if (p.underline && p.text.includes(p.underline)) { // orange underline drawn under one word (BlueVisa "lancé.")
+      const tw = G.measureText(p.text).width, pre = G.measureText(p.text.slice(0, p.text.indexOf(p.underline))).width, ww = G.measureText(p.underline).width;
+      const rtl = isAr(p.text), x0 = rtl ? W / 2 + tw / 2 - pre - ww : W / 2 - tw / 2 + pre, u = tween(t, p.underlineAt ?? 0.3, 0.3);
+      G.fillStyle = B.C.accent; G.fillRect(rtl ? x0 + ww * (1 - u) : x0, by + size * 0.62, ww * u, size * 0.11);
+    }
+    G.restore();
     return [{ t: 0, type: 'thump', gain: 0.6 }];
   };
 
@@ -485,10 +493,223 @@
     B.rrect(G, x * W, y * H, w * W, h * H, B.radius.md()); G.fill(); G.restore(); return [];
   };
 
+  // ---- kinetic components: stamp hook, tracker, stack, cta (BlueVisa / Dubz Up moves in 9k tokens) ----------
+  const deg = (d) => (d * Math.PI) / 180;
+  // A soft dark band behind floating type, so it reads over footage without a box. y0/y1 in px.
+  function scrim(y0, y1, a) {
+    const g = G.createLinearGradient(0, y0, 0, y1);
+    g.addColorStop(0, 'rgba(10,10,10,0)'); g.addColorStop(0.25, `rgba(10,10,10,${0.62 * a})`);
+    g.addColorStop(0.75, `rgba(10,10,10,${0.62 * a})`); g.addColorStop(1, 'rgba(10,10,10,0)');
+    G.save(); G.fillStyle = g; G.fillRect(0, y0, W, y1 - y0); G.restore();
+  }
+  // Check circle: ring when off, accent fill + black tick when on (k 0→1)
+  function check(x, y, r, k) {
+    G.save(); G.lineWidth = Math.max(2, r * 0.14);
+    G.beginPath(); G.arc(x, y, r, 0, 7); G.strokeStyle = k > 0 ? B.C.accent : B.F.theme.border; G.stroke();
+    if (k > 0) {
+      G.beginPath(); G.arc(x, y, r * Math.min(1, k * 1.2), 0, 7); G.fillStyle = B.C.accent; G.fill();
+      const u = clamp((k - 0.3) / 0.7); G.strokeStyle = B.C.onAccent; G.lineWidth = r * 0.26; G.lineCap = 'round'; G.lineJoin = 'round';
+      G.beginPath(); G.moveTo(x - r * 0.45, y + r * 0.02);
+      const p1 = [x - r * 0.12, y + r * 0.34], p2 = [x + r * 0.48, y - r * 0.32];
+      if (u < 0.45) { const v = u / 0.45; G.lineTo(lerp(x - r * 0.45, p1[0], v), lerp(y + r * 0.02, p1[1], v)); }
+      else { const v = (u - 0.45) / 0.55; G.lineTo(...p1); G.lineTo(lerp(p1[0], p2[0], v), lerp(p1[1], p2[1], v)); }
+      G.stroke();
+    }
+    G.restore();
+  }
+
+  // Stamp hook: kicker typed, a giant line that lands on its word (last part in accent), and a small bill card
+  // that gets a rubber stamp. p: { kicker, line, accent, lineAt, bill: [[label, value]…], billTitle, billUnit, total, stamp, stampAt, y }
+  C.stamp = (t, p) => {
+    const out = tween(t, p.dur - 0.3, 0.3), a = (1 - out);
+    const ks = rem(2.0), big = rem(p.size || 6), yK = H * (p.y ?? 0.415), yL = yK + big * 1.12;
+    scrim(H * ((p.y ?? 0.415) - 0.055), H * ((p.y ?? 0.415) + 0.325), clamp(t * 5) * a);
+    G.save(); G.globalAlpha *= a;
+    typedLine(p.kicker, t, cx(), yK, ks, { cps: 16, color: 'rgba(245,245,245,0.86)', caret: t < (p.lineAt ?? 1.5) });
+    // the big line: heavy spring, drops from 1.18× with zero overshoot
+    const lt = t - (p.lineAt ?? 1.5);
+    if (lt > 0) {
+      const k = sp(lt, 'heavy'), s = 1.18 - 0.18 * k;
+      G.save(); G.globalAlpha *= clamp(lt * 8); G.translate(cx(), yL - big * 0.32); G.scale(s, s);
+      G.font = `700 ${Math.round(big)}px ${B.FONTS.sans}`; G.direction = 'ltr'; G.textBaseline = 'alphabetic';
+      const head = p.line.slice(0, p.line.length - (p.accent || '').length), wh = G.measureText(head).width, wa = G.measureText(p.accent || '').width;
+      G.textAlign = 'left'; G.fillStyle = B.F.theme.text; G.fillText(head, -(wh + wa) / 2, big * 0.32);
+      G.fillStyle = B.C.accent; G.fillText(p.accent || '', -(wh + wa) / 2 + wh, big * 0.32);
+      G.restore();
+    }
+    // bill card under the line, tilted, enters with the line
+    const bt = lt - 0.12;
+    if (bt > 0 && p.bill) {
+      const k = sp(bt, 'default'), bw = rem(17), rs = rem(0.95), rh = rs * 1.75, bh = rs * 2.6 + p.bill.length * rh + rs * 2.4;
+      const bx = cx() - bw / 2, by = yL + big * 0.28 + (1 - k) * rem(2);
+      G.save(); G.globalAlpha *= clamp(bt * 6); G.translate(bx + bw / 2, by + bh / 2); G.rotate(deg(-3.5)); G.translate(-bw / 2, -bh / 2);
+      B.panel(G, 0, 0, bw, bh, { variant: 'default' });
+      G.font = `600 ${Math.round(rs * 0.8)}px ${B.FONTS.mono}`; G.fillStyle = B.F.theme.muted; G.textBaseline = 'alphabetic'; G.direction = 'ltr';
+      G.textAlign = 'left'; G.fillText(p.billTitle ?? 'INVOICE', rs * 1.1, rs * 1.7); G.textAlign = 'right'; G.fillText(p.billUnit ?? '/ month', bw - rs * 1.1, rs * 1.7);
+      p.bill.forEach(([l, v], i) => {
+        const y = rs * 2.6 + (i + 0.75) * rh; G.font = `400 ${Math.round(rs)}px ${B.FONTS.mono}`; G.fillStyle = B.F.theme.text;
+        G.textAlign = 'left'; G.fillText(l, rs * 1.1, y); G.textAlign = 'right'; G.fillText(v, bw - rs * 1.1, y);
+      });
+      const ty = rs * 2.6 + p.bill.length * rh + rs * 0.5; G.fillStyle = B.F.theme.border; G.fillRect(rs * 1.1, ty, bw - rs * 2.2, Math.max(1, R / 16));
+      G.font = `700 ${Math.round(rs * 1.15)}px ${B.FONTS.mono}`; G.fillStyle = B.F.theme.text; G.textAlign = 'left'; G.fillText('TOTAL', rs * 1.1, ty + rs * 1.55);
+      G.textAlign = 'right'; G.fillText(p.total || '$0.00', bw - rs * 1.1, ty + rs * 1.55);
+      // the stamp: slams from 1.7× (heavy spring, no overshoot), 1 px jolt on the card
+      const st = t - (p.stampAt ?? 2);
+      if (st > 0 && p.stamp) {
+        const sk = sp(st, 'heavy'), ss = 1.7 - 0.7 * Math.min(1, sk * 1.15), sz = rem(2.6);
+        G.save(); G.translate(bw * 0.66, bh * 0.52); G.rotate(deg(-14)); G.scale(ss, ss); G.globalAlpha *= clamp(st * 10) * 0.95;
+        fontFor(p.stamp, 800, sz); G.textAlign = 'center'; G.textBaseline = 'middle'; G.direction = 'rtl';
+        const sw = G.measureText(p.stamp).width + sz * 1.0, sh = sz * 1.55;
+        G.lineWidth = sz * 0.1; G.strokeStyle = B.C.accent; B.rrect(G, -sw / 2, -sh / 2, sw, sh, B.radius.sm()); G.stroke();
+        G.lineWidth = sz * 0.04; B.rrect(G, -sw / 2 + sz * 0.16, -sh / 2 + sz * 0.16, sw - sz * 0.32, sh - sz * 0.32, B.radius.sm()); G.stroke();
+        G.fillStyle = B.C.accent; G.fillText(p.stamp, 0, sz * 0.06);
+        G.restore();
+      }
+      G.restore();
+    }
+    G.restore();
+    return [{ t: 0, type: 'type', text: p.kicker, cps: 16, gain: 0.4 }, { t: p.lineAt ?? 1.5, type: 'whoosh', gain: 0.45 }, ...(p.stamp ? [{ t: (p.stampAt ?? 2) + 0.12, type: 'thump', gain: 0.7 }] : [])];
+  };
+
+  // Tracker: chips scattered in the mid band with small tilts (Dubz Up checklist), each landing at at[i];
+  // checkAt[i] ticks it (accent check). items: [{ label, icon }]
+  const SCATTER = [[0.27, 0, -4], [-0.22, 0.12, 3], [0.2, 1.05, 2.5], [-0.27, 1.0, -3], [0.24, 2.05, -2], [-0.2, 2.1, 3.5]];
+  C.tracker = (t, p) => {
+    const size = rem(p.size || 1.45), ch = size * 2.2, row = ch * 1.32, n = p.items.length, rows = Math.ceil(n / 2);
+    const y0 = zoneY(p, (rows - 1) * row + ch + row * 0.2), out = tween(t, p.dur - 0.25, 0.25), rtl = DIR === 'rtl';
+    p.items.forEach((it, i) => {
+      const at = p.at?.[i] ?? i * 0.15, lt = t - at; if (lt < 0) return;
+      const [dx, dy, tilt] = SCATTER[i % SCATTER.length], k = sp(lt, 'snappy');
+      fontFor(it.label, 700, size); const lw = G.measureText(it.label).width;
+      const hasIcon = it.icon && ICONS[it.icon], w = lw + size * (hasIcon ? 4.6 : 3.2);
+      const xC = cx() + (rtl ? 1 : -1) * dx * safeW(), yC = y0 + dy * row + ch / 2 - (1 - k) * rem(1.6);
+      const ck = p.checkAt ? clamp((t - p.checkAt[i]) / 0.3) : 0;
+      G.save(); G.globalAlpha *= clamp(lt * 7) * (1 - out); G.translate(xC, yC); G.rotate(deg(tilt));
+      G.scale(0.9 + 0.1 * k + 0.06 * Math.sin(Math.PI * ck), 0.9 + 0.1 * k + 0.06 * Math.sin(Math.PI * ck));
+      B.rrect(G, -w / 2, -ch / 2, w, ch, B.radius.md()); G.fillStyle = 'rgba(26,26,26,0.95)'; G.fill();
+      G.lineWidth = Math.max(1, R / 16); G.strokeStyle = ck > 0 ? B.C.accent : B.F.theme.border; G.stroke();
+      // LTR inside the chip: check · icon · label (Latin names)
+      let x = -w / 2 + size * 1.05; check(x, 0, size * 0.48, ck); x += size * 0.95;
+      if (hasIcon) { icon(it.icon, x, -size * 0.6, size * 1.2); x += size * 1.6; }
+      G.fillStyle = B.F.theme.text; G.textAlign = 'left'; G.direction = 'ltr'; G.textBaseline = 'middle'; G.fillText(it.label, x, size * 0.05);
+      G.restore();
+    });
+    return [...p.items.map((_, i) => ({ t: p.at?.[i] ?? i * 0.15, type: 'pop', gain: 0.35 })), ...(p.checkAt || []).map((c) => ({ t: c, type: 'click', gain: 0.45 }))];
+  };
+
+  // Stack: a status card that lands on a stack of the previous ones (BlueVisa "Société ✓").
+  // { n, total, icon, pre, title, titleAt, free, freeAt, rows: [{ text, at, strikeAt?, count? }], meter: { value, unit, at, label } }
+  // pre is typed first (his question), then retyped to the title on its word. side: 'start' | 'end' nudges it.
+  C.stack = (t, p) => {
+    const e = env(t, p.dur), size = rem(p.size || 1.4), w = W * 0.76, rtl = DIR === 'rtl';
+    const side = p.side ? (onRight(p) ? 1 : -1) : 0, xC = cx() + side * W * 0.035, x = xC - w / 2;
+    const head = size * 3.1, rowH = size * 1.5, nr = (p.rows || []).length, meterH = p.meter ? size * 4.0 : 0, pad = size * 0.7;
+    const yTop = zoneY(p, head + nr * rowH + meterH + pad);
+    const grown = (p.rows || []).reduce((a, r) => a + sp(t - r.at + 0.08, 'snappy'), 0) + (p.meter ? sp(t - p.meter.at + 0.08, 'snappy') * meterH / rowH : 0);
+    const h = head + grown * rowH + pad, depth = Math.min(3, (p.n || 1) - 1), y = yTop + depth * size * 0.1;
+    withEnv({ ...e, y: 0 }, () => {
+      // the stack behind: earlier cards as slivers
+      for (let d = depth; d >= 1; d--) {
+        const s = 1 - d * 0.05, ww = w * s; B.rrect(G, xC - ww / 2, y - d * size * 0.38, ww, h, B.radius.lg());
+        G.fillStyle = d === 1 ? '#1E1E1E' : '#191919'; G.fill(); G.lineWidth = Math.max(1, R / 16); G.strokeStyle = B.F.theme.border; G.stroke();
+      }
+      const k = sp(t, 'default'); G.save(); G.translate(side * (1 - k) * rem(4), (1 - k) * rem(1.2));
+      B.panel(G, x, y, w, h, { variant: 'feature' });
+      const xs = rtl ? x + w - size * 1.1 : x + size * 1.1, xe = rtl ? x + size * 1.1 : x + w - size * 1.1;
+      // header: n/total + dots at the end side
+      G.font = `600 ${Math.round(size * 0.62)}px ${B.FONTS.mono}`; G.fillStyle = B.F.theme.muted; G.direction = 'ltr'; G.textBaseline = 'alphabetic';
+      G.textAlign = rtl ? 'left' : 'right'; G.fillText(`${p.n}/${p.total || 6}`, xe, y + size * 1.25);
+      for (let i = 0; i < (p.total || 6); i++) {
+        const dx0 = xe + (rtl ? 1 : -1) * (size * 0.2 + i * size * 0.5);
+        G.beginPath(); G.arc(dx0, y + size * 1.85, size * 0.13, 0, 7);
+        G.fillStyle = i < p.n ? (i === p.n - 1 ? B.C.accent : B.F.theme.primaryText) : B.F.theme.border; G.fill();
+      }
+      // title: pre typed, retyped to the title on its word, icon pops in with it
+      const tt = t - (p.titleAt ?? 0.4), ts = size * 1.35, ty = y + size * 2.45;
+      const hasIcon = p.icon && ICONS[p.icon] && tt > 0;
+      let txt, typing;
+      if (p.pre) { if (tt < 0) { txt = typed(p.pre, t - 0.15, 20); typing = txt.length < [...p.pre].length; } else { const r = retype(p.pre, p.title, tt, 16, 40); txt = r.text; typing = r.typing; } }
+      else { txt = typed(p.title, tt, 18); typing = txt.length < [...p.title].length; }
+      const isT = !p.pre || tt > 0, ar = isAr(txt);
+      if (hasIcon) { const ik = sp(tt, 'snappy'), is = ts * 1.05 * ik; icon(p.icon, rtl ? xs - is : xs, ty - ts * 0.82 + (ts * 1.05 - is) / 2, is); }
+      const tx = hasIcon ? (rtl ? xs - ts * 1.5 : xs + ts * 1.5) : xs;
+      fontFor(txt || 'a', 700, isT && !ar ? ts : ts * 0.82); G.fillStyle = isT && !ar ? B.F.theme.text : B.F.theme.muted;
+      G.direction = ar ? 'rtl' : 'ltr'; G.textAlign = rtl ? 'right' : 'left'; G.fillText(txt, tx, ty);
+      if (caretOn(t, typing) && (typing || tt < 1.2)) { const tw = G.measureText(txt).width; G.fillStyle = B.C.accent; G.fillRect(rtl ? tx - tw - ts * 0.16 : tx + tw + ts * 0.08, ty - ts * 0.78, ts * 0.07, ts * 0.92); }
+      // free pill at the end of the title row
+      if (p.free && t > (p.freeAt ?? 1)) {
+        const fk = sp(t - p.freeAt, 'snappy'); G.save(); G.globalAlpha *= clamp((t - p.freeAt) * 6);
+        const bs = size * 0.7; G.font = `700 ${Math.round(bs)}px ${B.FONTS.sans}`; const bw = G.measureText(p.free).width + bs * 1.6, bh = bs * 2;
+        const bx = rtl ? xe : xe - bw; G.translate(0, (1 - fk) * rem(0.4));
+        B.rrect(G, bx, ty - ts * 0.62 - bh / 2 + bs * 0.2, bw, bh, B.radius.pill()); G.fillStyle = B.C.primary; G.fill();
+        G.fillStyle = B.C.white; G.textAlign = 'center'; G.direction = 'ltr'; G.textBaseline = 'middle'; G.fillText(p.free, bx + bw / 2, ty - ts * 0.62 + bs * 0.25); G.restore();
+      }
+      // divider
+      G.fillStyle = B.F.theme.border; G.globalAlpha *= clamp((t - (p.rows?.[0]?.at ?? p.meter?.at ?? 99)) * 5); G.fillRect(x + size * 1.1, y + head - size * 0.35, w - size * 2.2, Math.max(1, R / 16)); G.globalAlpha = e.a;
+      let yy = y + head;
+      (p.rows || []).forEach((r) => {
+        const lt = t - r.at; yy += rowH; if (lt < 0) return;
+        const rk = sp(lt, 'snappy'); G.save(); G.globalAlpha *= clamp(lt * 6); G.translate((rtl ? -1 : 1) * (1 - rk) * rem(1), 0);
+        let s = r.text; if (r.count != null) { const v = Math.round(r.count * tween(lt, 0, 0.9)); s = s.replace('{n}', v.toLocaleString('en-US')); }
+        const struck = r.strikeAt != null && t > r.strikeAt;
+        check(rtl ? xs - size * 0.45 : xs + size * 0.45, yy - size * 0.34, size * 0.42, struck ? 0 : clamp((lt - 0.15) / 0.3));
+        fontFor(s, 600, size); G.fillStyle = struck ? B.F.theme.muted : B.F.theme.text; G.direction = isAr(s) ? 'rtl' : 'ltr'; G.textAlign = rtl ? 'right' : 'left';
+        const sx0 = rtl ? xs - size * 1.25 : xs + size * 1.25; G.fillText(s, sx0, yy);
+        if (struck) { const sw = G.measureText(s).width * tween(t, r.strikeAt, 0.3); G.fillStyle = B.C.accent; G.fillRect(rtl ? sx0 - sw : sx0, yy - size * 0.36, sw, size * 0.09); }
+        G.restore();
+      });
+      if (p.meter) {
+        const m = p.meter, lt = t - m.at;
+        if (lt > 0) {
+          G.save(); G.globalAlpha *= clamp(lt * 6); const u = tween(lt, 0.05, 1.0), big = size * 2.3;
+          const v = (m.value * u).toFixed(m.value % 1 ? 1 : 0);
+          G.font = `700 ${Math.round(big)}px ${B.FONTS.sans}`; G.direction = 'ltr'; G.textAlign = rtl ? 'right' : 'left'; G.fillStyle = B.F.theme.text; G.textBaseline = 'alphabetic';
+          const label = `${v} ${m.unit}`; G.fillText(label, xs, yy + big * 1.05);
+          if (m.label) { fontFor(m.label, 700, size * 1.0); G.fillStyle = B.F.theme.text; G.direction = isAr(m.label) ? 'rtl' : 'ltr'; G.textAlign = rtl ? 'left' : 'right'; G.fillText(m.label, xe, yy + big * 1.0); }
+          const by = yy + big * 1.4, bw = w - size * 2.2, bh = size * 0.7, bx = x + size * 1.1;
+          B.rrect(G, bx, by, bw, bh, B.radius.pill()); G.fillStyle = B.F.theme.sunken; G.fill(); G.lineWidth = Math.max(1, R / 16); G.strokeStyle = B.F.theme.border; G.stroke();
+          const fw = Math.max(bh, bw * u); B.rrect(G, rtl ? bx + bw - fw : bx, by, fw, bh, B.radius.pill()); G.fillStyle = B.C.accent; G.fill();
+          G.restore();
+        }
+      }
+      G.restore();
+    });
+    return [{ t: 0, type: 'whoosh', gain: 0.35 }, ...(p.pre ? [{ t: 0.15, type: 'type', text: p.pre, cps: 20, gain: 0.3 }] : []), { t: p.titleAt ?? 0.4, type: 'type', text: p.title, cps: 16, gain: 0.4 },
+      ...(p.rows || []).map((r) => ({ t: r.at, type: 'click', gain: 0.4 })), ...(p.free ? [{ t: p.freeAt, type: 'pop', gain: 0.4 }] : []),
+      ...(p.meter ? [{ t: p.meter.at, type: 'ding', gain: 0.35 }] : [])];
+  };
+
+  // CTA: a muted typed line, then a green button whose keyword lands in an accent pill on its word; Nino beside it.
+  C.cta = (t, p) => {
+    const e = env(t, p.dur), size = rem(p.size || 1.9), rtl = DIR === 'rtl';
+    const y = zoneY(p, size * 6.2);
+    withEnv(e, () => {
+      if (p.line) typedLine(p.line, t - 0.1, cx(), y + size * 0.9, size * 0.8, { cps: 20, color: B.F.theme.muted, caret: false });
+      const parts = p.text.split(p.pill), bt = t - (p.buttonAt ?? 0.6); if (bt < 0) return;
+      const k = sp(bt, 'snappy'); fontFor(p.text, 700, size);
+      const wA = G.measureText(parts[0]).width, wB = G.measureText(parts[1] || '').width;
+      G.font = `700 ${Math.round(size)}px ${B.FONTS.sans}`; const wP = G.measureText(p.pill).width + size * 0.6;
+      const bw = wA + wB + wP + size * 2.4, bh = size * 2.6, bx = cx() - bw / 2, by = y + size * 2.0 + (1 - k) * rem(1);
+      G.save(); G.globalAlpha *= clamp(bt * 6); B.rrect(G, bx, by, bw, bh, B.radius.md()); G.fillStyle = B.C.primary; G.fill();
+      G.textBaseline = 'middle'; const yM = by + bh / 2 + size * 0.05;
+      // RTL: parts[0] at the right, pill in the middle, parts[1] at the left
+      let xr = rtl ? bx + bw - size * 1.2 : bx + size * 1.2;
+      fontFor(p.text, 700, size); G.fillStyle = B.C.white; G.direction = rtl ? 'rtl' : 'ltr'; G.textAlign = rtl ? 'right' : 'left'; G.fillText(parts[0].trim(), xr, yM);
+      xr += (rtl ? -1 : 1) * (wA + size * 0.0);
+      const pk = sp(t - (p.pillAt ?? 1.2), 'snappy'), px = rtl ? xr - wP : xr;
+      if (t > (p.pillAt ?? 1.2)) { B.rrect(G, px, yM - size * 0.72, wP, size * 1.44, B.radius.sm()); G.fillStyle = B.C.accent; G.globalAlpha *= 0.4 + 0.6 * pk; G.fill(); G.globalAlpha = clamp(bt * 6) * e.a; }
+      G.font = `700 ${Math.round(size)}px ${B.FONTS.sans}`; G.fillStyle = t > (p.pillAt ?? 1.2) ? B.C.onAccent : B.C.white; G.direction = 'ltr'; G.textAlign = 'center'; G.fillText(p.pill, px + wP / 2, yM);
+      xr += (rtl ? -1 : 1) * wP; fontFor(p.text, 700, size); G.fillStyle = B.C.white; G.direction = rtl ? 'rtl' : 'ltr'; G.textAlign = rtl ? 'right' : 'left'; G.fillText((parts[1] || '').trim(), xr - (rtl ? size * 0.25 : -size * 0.25), yM);
+      G.restore();
+      if (p.nino) { const ns = rem(4.2); B.nino(G, rtl ? bx + ns * 0.2 : bx + bw - ns * 1.2, by - ns * 1.02, ns, { expression: t > (p.pillAt ?? 1.2) ? 'happy' : 'idle', t }); }
+    });
+    return [{ t: 0.1, type: 'type', text: p.line || '', cps: 20, gain: 0.3 }, { t: p.buttonAt ?? 0.6, type: 'pop', gain: 0.45 }, { t: p.pillAt ?? 1.2, type: 'ding', gain: 0.4 }];
+  };
+
   // ---- entry points -----------------------------------------------------------------
   function init(ctx, data) {
     G = ctx; W = data.format.w; H = data.format.h; DIR = data.dir || 'ltr'; PORTRAIT = H > W;
-    CAP_TOP = (data.captionStyle?.y ?? (PORTRAIT ? 0.72 : 0.84)) - (PORTRAIT ? 0.065 : 0.07);
+    CAP_TOP = (data.captionStyle?.y ?? (PORTRAIT ? 0.72 : 0.84)) - (PORTRAIT ? 0.065 : 0.07); FACE = data.faceBottom ?? null;
     R = Math.min(W, H) / 1080 * 32; ICONS = data.icons || {};
     const imgs = [...new Set((data.graphics || []).filter((x) => x.src).map((x) => x.src))];
     return Promise.all(imgs.map((src) => new Promise((ok) => { const im = new Image(); im.onload = im.onerror = () => ok(); im.src = (data.images || {})[src] || src; IMAGES[src] = im; })));
@@ -502,20 +723,42 @@
     const d = Math.max(0, ...active.map((x) => (x.dim || 0) * Math.min(clamp((t - x.t) * 5), clamp((x.t + x.dur - t) * 5))));
     if (d) { dim(d); n++; }
     const under = active.filter((x) => x.type === 'mask' || (x.type === 'image' && x.fit === 'full'));
-    for (const x of under) { C[x.type](t - x.t, x); n++; }
+    for (const x of under) { G.save(); offset(x); C[x.type](t - x.t, x); G.restore(); n++; }
     const capOff = active.some((x) => x.captions === false || ['band', 'endcard', 'quote', 'title'].includes(x.type) || (x.type === 'image' && x.fit === 'full'));
     const pn = active.find((x) => x.type === 'panel'); // captions follow the footage as it slides away from the column
     CAPDX = pn ? (onRight(pn) ? -1 : 1) * ((pn.w || 0.3) * W / 2) * slide(t - pn.t, pn.dur) : 0;
     if (!capOff && data.captions) n += captions(t, data.captions, data.captionStyle || {});
-    for (const x of active) if (!under.includes(x)) {
-      const col = !PORTRAIT && x.side && x.type !== 'panel' ? (onRight(x) ? 0.79 : 0.21) : null;
-      CX = x.type === 'emoji' ? null : x.x ?? col; SW = x.w ?? (col ? 0.34 : null);
-      KICK = x.kicker && x.type !== 'panel' && x.type !== 'title' ? KSIZE() * 2 + rem(0.5) : 0; TOPY = null;
-      C[x.type](t - x.t, x);
-      if (KICK && TOPY != null) kicker(t - x.t, x, TOPY);
-      CX = SW = null; KICK = 0; n++;
-    }
+    for (const x of active) if (!under.includes(x)) { drawOne(t, x); n++; }
     return n;
+  }
+  // dx / dy (fractions of W / H) on any graphic: moves it as a whole, after its own layout (set by dragging in the editor)
+  function offset(x) { if (x.dx || x.dy) G.translate((x.dx || 0) * W, (x.dy || 0) * H); }
+  function drawOne(t, x) {
+    const col = !PORTRAIT && x.side && x.type !== 'panel' ? (onRight(x) ? 0.79 : 0.21) : null;
+    CX = x.type === 'emoji' ? null : x.x ?? col; SW = x.w ?? (col ? 0.34 : null);
+    KICK = x.kicker && x.type !== 'panel' && x.type !== 'title' ? KSIZE() * 2 + rem(0.5) : 0; TOPY = null;
+    G.save(); offset(x);
+    C[x.type](t - x.t, x);
+    if (KICK && TOPY != null) kicker(t - x.t, x, TOPY);
+    G.restore(); CX = SW = null; KICK = 0;
+  }
+  // Editor: which graphic is drawn at pixel (px, py) at time t? Index into data.graphics, topmost first, or -1.
+  // Each active graphic is drawn alone on a scratch canvas and the pixels around the pointer are checked for ink.
+  let HIT = null;
+  function hit(t, data, px, py, r = 8) {
+    const list = (data.graphics || []).map((x, i) => [x, i]).filter(([x]) => t >= x.t && t < x.t + x.dur && C[x.type]);
+    if (!list.length) return -1;
+    HIT = HIT || document.createElement('canvas'); HIT.width = W; HIT.height = H;
+    const g0 = G; G = HIT.getContext('2d', { willReadFrequently: true }); B.frame(G, W, H, { theme: data.theme || 'dark', dir: DIR });
+    let found = -1;
+    const x0 = Math.max(0, Math.round(px - r)), y0 = Math.max(0, Math.round(py - r)), w = Math.min(W - x0, r * 2 + 1), h = Math.min(H - y0, r * 2 + 1);
+    for (let k = list.length - 1; k >= 0 && found < 0; k--) {
+      const [x, i] = list[k]; G.clearRect(0, 0, W, H);
+      if (x.type === 'mask' || (x.type === 'image' && x.fit === 'full')) { G.save(); offset(x); C[x.type](t - x.t, x); G.restore(); } else drawOne(t, x);
+      if (w > 0 && h > 0) { const a = G.getImageData(x0, y0, w, h).data; for (let j = 3; j < a.length; j += 4) if (a[j] > 40) { found = i; break; } }
+    }
+    G = g0; B.frame(G, W, H, { theme: data.theme || 'dark', dir: DIR });
+    return found;
   }
   // SFX cues every component asks for, in output time (render-overlay.mjs writes them to work/cues.auto.json)
   function cues(data) {
@@ -528,5 +771,5 @@
     }
     return out;
   }
-  g.O = { init, draw, cues, captions, C };
+  g.O = { init, draw, cues, captions, hit, C };
 })(window);

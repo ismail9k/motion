@@ -8,6 +8,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { silences } from '../lib/media.mjs';
+import { kind as hdrKind, tags as hdrTags } from '../lib/hdr.mjs';
 
 const cfg = JSON.parse(readFileSync('montage.json', 'utf8'));
 const edit = JSON.parse(readFileSync('edit.json', 'utf8'));
@@ -92,10 +93,13 @@ const graph = lines.join('\n') + '\n' + keep.map((_, i) => `[v${i}][a${i}]`).joi
   (TAIL ? `,tpad=stop_mode=clone:stop_duration=${TAIL}[vout];[ca0]apad=pad_dur=${TAIL}[ca]` : '[vout];[ca0]anull[ca]');
 writeFileSync('work/cut.graph', graph);
 const preview = process.argv.includes('--preview');
+const HDR = hdrKind(cfg.source);
+if (HDR) console.log(`source is HDR (${HDR}): cutting in 10-bit`);
 console.log(`cutting ${keep.length} segments → ${cw}x${ch} @ ${F.fps} fps…`);
 execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', cfg.source, '-/filter_complex', 'work/cut.graph',
   '-map', '[vout]', '-map', '[ca]', '-c:v', 'libx264', '-preset', preview ? 'ultrafast' : 'fast', '-crf', preview ? '23' : '15',
-  '-pix_fmt', 'yuv420p', '-c:a', 'pcm_s16le', '-ar', '48000', 'work/cut.mov'], { stdio: 'inherit' });
+  // HDR (iPhone HLG / Dolby Vision, PQ): stay 10-bit with the source's colour tags; 8-bit HLG bands and dulls the picture
+  ...(HDR ? ['-pix_fmt', 'yuv420p10le', ...hdrTags(HDR)] : ['-pix_fmt', 'yuv420p']), '-c:a', 'pcm_s16le', '-ar', '48000', 'work/cut.mov'], { stdio: 'inherit' });
 execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', 'work/cut.mov', '-vf', `scale=${F.w / 2}:${F.h / 2}:force_original_aspect_ratio=increase,crop=${F.w / 2}:${F.h / 2}`,
   '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '26', '-c:a', 'aac', '-b:a', '128k', 'work/cut.proxy.mp4']);
 const outDur = OUT_DUR;
