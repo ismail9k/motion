@@ -7,7 +7,7 @@ description: Use when a creator hands over a video of themselves to edit in the 
 
 ## Overview
 
-You are the editor. A video goes in, and a finished 9k montage comes out: tightened cut, jump-cut punch-ins, word-by-word captions, 9k motion graphics on the right words, SFX, end card. His voice stays as recorded: no clean-up, at the source level. The pipeline is scripted. Your job is the judgment: what to cut, what the words really are, which graphic goes on which word, and an honest critique of your own frames.
+You are the editor. A video goes in, and a finished 9k montage comes out: tightened cut, jump-cut punch-ins, word-by-word captions, 9k motion graphics on the right words, SFX. No end card, ever (he said so, Nov 2026): the film ends on his last word. His voice stays as recorded: no clean-up, at the source level. The pipeline is scripted. Your job is the judgment: what to cut, what the words really are, which graphic goes on which word, and an honest critique of your own frames.
 
 **One gate only.** You ask the user nothing before the plan. Read the footage, decide, write `docs/plan.md`, and wait for "OK". After the OK, render, self-review, fix, and deliver without asking again.
 
@@ -22,7 +22,7 @@ He decided (Nov 2026): new montages are built on **HyperFrames**, not on code yo
 | Graphics and captions over his footage, preview, render | `hyperframes` (the entry skill; it routes designed overlays on talking-head footage to `talking-head-recut`), `hyperframes-core`, `hyperframes-cli` |
 | Any named visual (chart, terminal, counter, glitch, card…) | `hyperframes-registry` **before** composing one by hand |
 | Motion | `hyperframes-animation`, in 9k springs and tokens (`../9k-motion/references/brand.md`) |
-| He wants to edit it himself | `hyperframes-studio`, not a custom editor |
+| He wants to edit it himself ("open in editor", "HyperFrames") | `bash scripts/studio.sh` ports the finished film into a HyperFrames Studio project in `studio/`, then `hyperframes-studio`. Port, gotchas, working beside him in Studio: `references/hyperframes.md` |
 | SFX | `add-sfx` (Woven catalog, `woven-sfx` MCP: `sfx_search` → `sfx_pull`), or `media-use` |
 | Mix, ducking, effects on a track | `hyperframes-audio` |
 
@@ -34,13 +34,13 @@ The scripted pipeline below (`edit.json` → `overlay.js` → `compose.mjs`, `ed
 
 1. **Scaffold:** if `<name>-9k/` already sits next to the video, this is a re-edit: work in that folder (its README has the rebuild commands) and skip to the step the request touches. Otherwise `bash <skill>/scripts/new-montage.sh "<video>" [project-dir]` (`<skill>` is this skill's base directory) creates the project (default `~/films/montage-<folder-slug>/`). Then `cd` into it. It links sounds and images found next to the video into `assets/`. Never write into the source folder until delivery.
 2. **Ingest:** `node scripts/ingest.mjs` (add `--lang ar` for Arabic). Read `work/transcript.md` and `work/ingest.json`, and **look at** `work/contact.png`. Follow `references/craft.md` §1: face box, burned-in text, inserts already in the source, framing.
-3. **Cut:** write `edit.json` → `cut` (drops for retakes and flubs on raw takes; just tightening on rough cuts) and `tail` (3.2 for an end card, decided now because cut.mjs applies it), then run `node scripts/cut.mjs`. From here on, every time is OUTPUT time from `work/transcript.cut.md`.
+3. **Cut:** write `edit.json` → `cut` (drops for retakes and flubs on raw takes; just tightening on rough cuts) and `tail: 0` (no end card, ever), then run `node scripts/cut.mjs`. From here on, every time is OUTPUT time from `work/transcript.cut.md`.
 4. **Transcript:** run `node lib/captions.mjs`, fix every misheard word in `captions.fixes`, and set `keywords`. Repeat until every chunk reads right (craft §3).
-5. **Design the edit:** fill in `camera`, `graphics` (with the `endcard` at the start of the tail) and `audio`. Schema: `references/edit-spec.md`. Choices: craft §4–6. Work sentence by sentence: one graphic per idea, held for the sentence and built on his words. Then run `bash scripts/review.sh` for overlay-over-footage stills every 2 s, read the coverage line it prints, look at the stills, and fix every bare stretch and anything obvious.
+5. **Design the edit:** fill in `camera`, `graphics` (never an `endcard`) and `audio`. Schema: `references/edit-spec.md`. Choices: craft §4–6. Work sentence by sentence: one graphic per idea, held for the sentence and built on his words. Then run `bash scripts/review.sh` for overlay-over-footage stills every 2 s, read the coverage line it prints, look at the stills, and fix every bare stretch and anything obvious.
 6. **Plan → GATE:** fill in `docs/plan.md` with source facts, cut summary, transcript fixes, and the beat table (time · words · caption accent · graphic · camera · sound). Show it, together with `out/contact.png`. **Wait for OK.** Apply any notes, then continue without asking again.
 7. **Render:** `node scripts/render-overlay.mjs`, then `node scripts/compose.mjs`.
 8. **Critique loop:** run `bash scripts/review.sh out/final-1080x1920.mp4 <climax-t>`. Open contact, phone and strip, score them with the rubric in craft §7, fix the 3 worst problems, and re-render. Do at least 2 rounds. Log each round in `docs/review_log.md`.
-9. **Deliver:** copy the final next to the source as `<name>-9k.mp4`, then run `bash scripts/archive.sh`: it saves the editable project next to the source as `<name>-9k/` (edit.json, transcript, plan, review log, scripts, real copies of the assets, the final). Always, on every delivery and every later re-render, so he can change the film months later. Never overwrite the source. Report both paths, duration (before → after), LUFS, what you fixed in critique, and one line on what you'd improve next.
+9. **Deliver:** copy the final next to the source as `<name>-9k.mp4`, then run `bash scripts/archive.sh`: it saves the editable project next to the source as `<name>-9k/` (edit.json, transcript, plan, review log, scripts, real copies of the assets, the final). Always, on every delivery and every later re-render, so he can change the film months later. Never overwrite the source, and never overwrite a delivered version: a later version goes beside it as `<name>-9k-v2.mp4`. Report both paths, duration (before → after), LUFS, what you fixed in critique, and one line on what you'd improve next.
 
 ## Quick reference
 
@@ -49,7 +49,9 @@ The scripted pipeline below (`edit.json` → `overlay.js` → `compose.mjs`, `ed
 | Every edit.json key, all 22 graphic types | `references/edit-spec.md` |
 | Cut rules, whisper fixes, graphic choice and placement, sound, review rubric | `references/craft.md` |
 | 9k colors, type, springs, Nino, wordmark | `<skill>/../9k-motion/references/brand.md` |
-| Hand him the editor ("let me edit it myself") | `node scripts/editor.mjs` → http://localhost:5174: preview with camera zoom, draggable timeline, graphic / caption / camera panels, Render and Deliver. Writes edit.json directly |
+| Open it in HyperFrames Studio | `bash scripts/studio.sh` → `cd studio && npx hyperframes@0.9.23 check` → `snapshot --against ../out/final-1080x1920.mp4` → `preview --background` (`references/hyperframes.md`) |
+| A picture scene instead of a text card | `templates/hf-scenes/load-crowd.html` (crowd → server → overload), registry blocks via `npx hyperframes catalog --json` |
+| Hand him the old canvas editor (re-edits of canvas projects only) | `node scripts/editor.mjs` → http://localhost:5174: preview with camera zoom, draggable timeline, graphic / caption / camera panels, Render and Deliver. Writes edit.json directly |
 | Live preview of overlay over footage | open `overlay.html` in Chrome (scrub the video) |
 | Quick preview of one range | `node scripts/compose.mjs --from 15 --to 25 --half` |
 | Labelled frames from any video | `node lib/sheet.mjs <video> out.png --every 1` |
@@ -74,6 +76,9 @@ Timing: on Apple Silicon, ingest takes ~20 s and cut ~60 s per 100 s of 4K. Over
 | "The mp4 is delivered, the project in ~/films is enough" | He looks next to the video, not in ~/films. No `<name>-9k/` folder there means the delivery isn't finished |
 | "I rendered it, so it's done" | It isn't done until you've looked at the review sheets for 2 rounds |
 | "Sample the logo's colours / use Inter" | 9k tokens only. Logos are monochrome by default (`iconColor: 'brand'` only if he asks) |
+| "A text card / typed line is enough for this beat" | He asked for more visuals instead of text (Nov 2026). Tell the beat as a small picture scene; text only where the words are the payoff (craft §4) |
+| "I'll re-run port-hf.mjs to apply my fix" | After the first Studio edit the HTML is the source: re-running overwrites his work. Edit the HTML by hand |
+| "That scene vanished, I'll restore it" | A host missing after he used Studio is probably his deletion. Check `studio/.hyperframes/backup/`, then ask |
 | "I'll write a component / an editor / a mixer for this" | He said don't build it yourself. HyperFrames registry, Studio and audio first (see Engine) |
 | "It's an iPhone clip, 8-bit H.264 is fine" | iPhone footage is HDR (HLG + Dolby Vision). 8-bit bands and dulls it, and he notices. Stay 10-bit HLG end to end (craft §1) |
 | "I'll add echo / phone filter on his voice for flavour" | He turned voice effects down. His voice stays as recorded unless he asks for an effect |
@@ -94,4 +99,6 @@ Timing: on Apple Silicon, ingest takes ~20 s and cut ~60 s per 100 s of 4K. Over
 | `eq=saturation=1.05` to add colour | In ffmpeg 8 it *lowers* chroma, and `eq` drops 10-bit to 8. `compose.mjs` uses `hue=s` for saturation; never add `eq` back on HDR |
 | Judging HDR colour from the review stills | The stills show the raw HLG signal and look flat and grey. Compare numbers (`signalstats` SATAVG / YAVG on the same frame of source and output), or watch on an HDR screen |
 | Re-rendering after he edited in the editor and losing his moves | His drags are `dx` / `dy` in edit.json. Render from edit.json as it is; never regenerate graphics over his offsets |
+| Editing files while Studio is open, then letting him keep editing | Studio saves its stale copy over yours. Reload the Studio tab after every file change; diff `index.html` before acting |
+| He stretched a scene in Studio and it now cuts off | Studio wrote timing onto the scene's inner root: remove it so the scene reads its length from the host, then check the new tail against the captions |
 | SFX as loud as the voice | Hits sit 8–14 dB under the voice, the climax ~6 dB under. Measure them (craft §6), don't guess from the sample's default volume |

@@ -16,6 +16,7 @@ rsync -aL --delete \
   --exclude node_modules --exclude .DS_Store \
   --exclude 'work/overlay' --exclude 'work/overlay.empty.png' --exclude 'work/cut.mov' --exclude 'work/cut.proxy.mp4' \
   --exclude 'work/*.wav' --exclude 'work/*.png' --exclude 'out/stills' --exclude 'out/preview-*' \
+  --exclude 'studio/.hyperframes' --exclude 'studio/.thumbnails' --exclude 'studio/assets/footage.mp4' --exclude 'studio/renders' \
   --exclude README.md \
   ./ "$DEST/"
 
@@ -46,7 +47,14 @@ node scripts/cut.mjs                       # once: rebuilds the cut footage from
 node scripts/render-overlay.mjs && node scripts/compose.mjs
 \`\`\`
 
-After that, re-run only what an edit touches: \`cut.mjs\` for \`cut\`, \`render-overlay.mjs\` for captions and graphics,
+If \`studio/\` exists, the film was finished in HyperFrames Studio and **its HTML is the source**, not edit.json:
+
+\`\`\`bash
+bash scripts/studio.sh --no-port           # once: re-stages the footage. Always --no-port: a full run overwrites the HTML
+cd studio && npx hyperframes@0.9.23 preview
+\`\`\`
+
+Otherwise (canvas pipeline), re-run only what an edit touches: \`cut.mjs\` for \`cut\`, \`render-overlay.mjs\` for captions and graphics,
 \`compose.mjs\` for camera, grade and audio. Or ask Claude to "change the montage in this folder".
 EOF
 echo "project saved → $DEST ($(du -sh "$DEST" | cut -f1))"
