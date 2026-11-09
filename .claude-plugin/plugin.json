@@ -1,6 +1,6 @@
 {
   "name": "motion",
-  "description": "9k motion skills: motion films from a brief (9k-motion) and full edits of your own footage (9k-montage), styled from the 9k design system and rendered from code with Playwright and ffmpeg.",
+  "description": "9k motion skills: motion films from a brief (9k-motion), full edits of your own footage (9k-montage), and reel covers in the locked 9k theme (9k-reel-cover), styled from the 9k design system.",
   "version": "0.1.0",
   "author": {
     "name": "Ismail (9K)",
@@ -8,5 +8,13 @@
   },
   "homepage": "https://github.com/ismail9k/motion",
   "repository": "https://github.com/ismail9k/motion",
-  "keywords": ["motion-graphics", "video", "montage", "captions", "9k"]
+  "keywords": [
+    "motion-graphics",
+    "video",
+    "montage",
+    "captions",
+    "9k",
+    "reel-cover",
+    "thumbnail"
+  ]
 }

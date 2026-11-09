@@ -2,3 +2,6 @@
 films/
 node_modules/
 .DS_Store
+
+# 9k-reel-cover: local font copies (Thmanyah is not redistributable)
+skills/9k-reel-cover/templates/fonts/
