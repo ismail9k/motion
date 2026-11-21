@@ -4,6 +4,19 @@ Reusable pieces of the 9k edit, so every short looks and moves the same. Generat
 from `src/`: edit `src/items.mjs` (a block) or `src/shared.mjs` (tokens, fonts, motion, the block shell), then
 rebuild. Never hand-edit `blocks/` or `components/`.
 
+## See them
+
+`node registry/build.mjs` also writes `registry/preview/`, a gallery project that plays every block with its default
+values, labelled, in the split layout. Open it in HyperFrames Studio to watch, scrub, and try values in each block's
+variables panel:
+
+```bash
+cd registry/preview && npx hyperframes preview
+```
+
+It is regenerated on every build (and gitignored), so changes there are thrown away: change `src/`, rebuild, and Studio
+reloads.
+
 ## Use it in a HyperFrames project
 
 Point the project at this registry in `hyperframes.json`:
