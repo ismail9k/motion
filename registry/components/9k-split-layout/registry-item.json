@@ -1,0 +1,24 @@
+{
+  "$schema": "https://hyperframes.heygen.com/schema/registry-item.json",
+  "name": "9k-split-layout",
+  "type": "hyperframes:component",
+  "title": "9k split layout",
+  "description": "The host layout for reaction shorts: a 1080×608 top panel for the reference clip or a picture scene, the talking head below it, a seam and shade where they meet, and alternating punch-in framing for jump cuts.",
+  "tags": [
+    "layout",
+    "split-screen",
+    "social",
+    "9k"
+  ],
+  "author": "ismail9k",
+  "authorUrl": "https://ismail9k.com",
+  "license": "MIT",
+  "minCliVersion": "0.9.77",
+  "files": [
+    {
+      "path": "9k-split-layout.html",
+      "target": "compositions/components/9k-split-layout.html",
+      "type": "hyperframes:snippet"
+    }
+  ]
+}

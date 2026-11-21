@@ -1,0 +1,89 @@
+{
+  "$schema": "https://hyperframes.heygen.com/schema/registry-item.json",
+  "name": "9k-tokens",
+  "type": "hyperframes:component",
+  "title": "9k tokens and fonts",
+  "description": "The 9k design tokens as CSS custom properties plus the IBM Plex Sans Arabic / Sans / Mono font faces (OFL, shipped as assets). Every 9k block depends on it.",
+  "tags": [
+    "tokens",
+    "fonts",
+    "arabic",
+    "9k"
+  ],
+  "author": "ismail9k",
+  "authorUrl": "https://ismail9k.com",
+  "license": "MIT AND OFL-1.1",
+  "minCliVersion": "0.9.77",
+  "files": [
+    {
+      "path": "9k-tokens.html",
+      "target": "compositions/components/9k-tokens.html",
+      "type": "hyperframes:snippet"
+    },
+    {
+      "path": "fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2",
+      "target": "assets/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2",
+      "type": "hyperframes:asset"
+    },
+    {
+      "path": "fonts/ibm-plex-sans-arabic-arabic-600-normal.woff2",
+      "target": "assets/fonts/ibm-plex-sans-arabic-arabic-600-normal.woff2",
+      "type": "hyperframes:asset"
+    },
+    {
+      "path": "fonts/ibm-plex-sans-arabic-arabic-700-normal.woff2",
+      "target": "assets/fonts/ibm-plex-sans-arabic-arabic-700-normal.woff2",
+      "type": "hyperframes:asset"
+    },
+    {
+      "path": "fonts/ibm-plex-sans-arabic-latin-400-normal.woff2",
+      "target": "assets/fonts/ibm-plex-sans-arabic-latin-400-normal.woff2",
+      "type": "hyperframes:asset"
+    },
+    {
+      "path": "fonts/ibm-plex-sans-arabic-latin-600-normal.woff2",
+      "target": "assets/fonts/ibm-plex-sans-arabic-latin-600-normal.woff2",
+      "type": "hyperframes:asset"
+    },
+    {
+      "path": "fonts/ibm-plex-sans-arabic-latin-700-normal.woff2",
+      "target": "assets/fonts/ibm-plex-sans-arabic-latin-700-normal.woff2",
+      "type": "hyperframes:asset"
+    },
+    {
+      "path": "fonts/ibm-plex-sans-latin-400-normal.woff2",
+      "target": "assets/fonts/ibm-plex-sans-latin-400-normal.woff2",
+      "type": "hyperframes:asset"
+    },
+    {
+      "path": "fonts/ibm-plex-sans-latin-500-normal.woff2",
+      "target": "assets/fonts/ibm-plex-sans-latin-500-normal.woff2",
+      "type": "hyperframes:asset"
+    },
+    {
+      "path": "fonts/ibm-plex-sans-latin-600-normal.woff2",
+      "target": "assets/fonts/ibm-plex-sans-latin-600-normal.woff2",
+      "type": "hyperframes:asset"
+    },
+    {
+      "path": "fonts/ibm-plex-sans-latin-700-normal.woff2",
+      "target": "assets/fonts/ibm-plex-sans-latin-700-normal.woff2",
+      "type": "hyperframes:asset"
+    },
+    {
+      "path": "fonts/ibm-plex-mono-latin-400-normal.woff2",
+      "target": "assets/fonts/ibm-plex-mono-latin-400-normal.woff2",
+      "type": "hyperframes:asset"
+    },
+    {
+      "path": "fonts/ibm-plex-mono-latin-700-normal.woff2",
+      "target": "assets/fonts/ibm-plex-mono-latin-700-normal.woff2",
+      "type": "hyperframes:asset"
+    },
+    {
+      "path": "fonts/OFL.txt",
+      "target": "assets/fonts/OFL.txt",
+      "type": "hyperframes:asset"
+    }
+  ]
+}

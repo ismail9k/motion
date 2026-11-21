@@ -1,0 +1,32 @@
+<!--
+  9k tokens and fonts. Paste the style block below into your host composition's styles.
+  It gives you:
+    - the 9k colours as CSS variables (--k9-bg, --k9-green, --k9-orange, --k9-text, --k9-muted …)
+    - IBM Plex Sans Arabic / Sans / Mono, from assets/fonts/ (installed with this component, SIL OFL 1.1)
+    - .k9 base classes: wrap 9k content in a div with class k9; inside it .lat / .mono isolate Latin runs,
+      .center is a full-width flex row, .caret is the orange typing caret, .panelbg the dark scene panel.
+  Every 9k block already carries these; you need this snippet only for your own host markup.
+-->
+<style>
+:root{--k9-bg:#0F0F0F;--k9-surface:#1A1A1A;--k9-surface2:#242424;--k9-border:#404040;--k9-text:#F5F5F5;--k9-muted:#999999;--k9-green:#166434;--k9-green-text:#2FB161;--k9-green-sel:#1F3327;--k9-orange:#E85A02;--k9-warning:#F4C871;--k9-error:#F39191;--k9-ink:#0A111A}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2") format("woff2");font-weight:400;font-display:block;unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-arabic-600-normal.woff2") format("woff2");font-weight:600;font-display:block;unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-arabic-700-normal.woff2") format("woff2");font-weight:700;font-display:block;unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-latin-400-normal.woff2") format("woff2");font-weight:400;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-latin-600-normal.woff2") format("woff2");font-weight:600;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-latin-700-normal.woff2") format("woff2");font-weight:700;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Sans";src:url("assets/fonts/ibm-plex-sans-latin-400-normal.woff2") format("woff2");font-weight:400;font-display:block}
+@font-face{font-family:"IBM Plex Sans";src:url("assets/fonts/ibm-plex-sans-latin-500-normal.woff2") format("woff2");font-weight:500;font-display:block}
+@font-face{font-family:"IBM Plex Sans";src:url("assets/fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2");font-weight:600;font-display:block}
+@font-face{font-family:"IBM Plex Sans";src:url("assets/fonts/ibm-plex-sans-latin-700-normal.woff2") format("woff2");font-weight:700;font-display:block}
+@font-face{font-family:"IBM Plex Mono";src:url("assets/fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");font-weight:400;font-display:block}
+@font-face{font-family:"IBM Plex Mono";src:url("assets/fonts/ibm-plex-mono-latin-700-normal.woff2") format("woff2");font-weight:700;font-display:block}
+.k9{position:absolute;inset:0;overflow:hidden;pointer-events:none;direction:rtl;color:#F5F5F5;font-family:"IBM Plex Sans Arabic","IBM Plex Sans",sans-serif;-webkit-font-smoothing:antialiased}
+.k9 .abs{position:absolute}
+.k9 .lat{font-family:"IBM Plex Sans",sans-serif;direction:ltr;unicode-bidi:isolate}
+.k9 .mono{font-family:"IBM Plex Mono",monospace;direction:ltr;unicode-bidi:isolate}
+.k9 .center{position:absolute;left:0;right:0;display:flex;justify-content:center}
+.k9 .caret{display:inline-block;width:.08em;height:.9em;margin:0 .04em;background:#E85A02;vertical-align:-.1em}
+.k9 .glow{position:absolute;width:760px;height:760px;border-radius:50%;filter:blur(90px);opacity:.22}
+.k9 .panelbg{position:absolute;inset:0;background:#0F0F0F}
+</style>

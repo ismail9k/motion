@@ -6,7 +6,13 @@ Three agent skills for 9k video: motion graphics from a brief, full edits of you
 |---|---|---|
 | [`9k-motion`](skills/9k-motion/SKILL.md) | A brief: segment, promo, title card, end card | A motion film built from code. It starts with a questionnaire and asks for references |
 | [`9k-montage`](skills/9k-montage/SKILL.md) | **A video of you**: raw takes or a rough cut | The edited montage: tightened cut, jump-cut punch-ins, word-by-word Arabic/English captions, 9k graphics timed to the words, SFX, −14 LUFS, end card. There is one plan gate and no questionnaire |
+| [`9k-trial-reels`](skills/9k-trial-reels/SKILL.md) | **A raw take of you**, often reacting to a show or podcast clip | Three versions of one short for Instagram trial reels, through three gates you approve: the cut (you trim it yourself in a HyperFrames cut-review project), then three versions built in HyperFrames with different hooks and orders (each render audio-checked against your cut), then the cover. Finals land next to the source as `<yymmdd>-<slug>-A/B/C.mp4` |
 | [`9k-reel-cover`](skills/9k-reel-cover/SKILL.md) | A script or a video of you | A 9:16 reel cover in the locked 9k theme: one real frame relit by Codex image generation into the dark 9k studio, with the title, subtitle and brand marks typeset from a template, so no text is AI-drawn and every cover on the grid matches |
+
+**[`registry/`](registry/README.md): the 9k HyperFrames registry.** Reusable blocks (bilingual captions, hook stamp,
+climax band, kicker title, number roll, verdict split) and components (9k tokens and fonts, the split layout), so
+every HyperFrames edit uses the same type, colors and motion. Install into a project with
+`node registry/install.mjs <project> [block]`; the [registry README](registry/README.md) covers editing and `hyperframes add`.
 
 Every frame is styled from the [9k identity](docs/identity.md): colors, type, the Ismail9k → 9k wordmark, Nino. Install it to make 9k content, not as a general-purpose motion kit.
 
@@ -27,7 +33,7 @@ With the [Skills CLI](https://github.com/vercel-labs/skills), for Claude Code, C
 npx skills add ismail9k/motion
 ```
 
-Install `9k-motion` and `9k-montage` together: `9k-montage` copies its engine and brand files from the sibling `9k-motion` skill. `9k-reel-cover` stands alone. The [install guide](docs/install.md) covers the tools, the whisper model and troubleshooting.
+Install `9k-motion` and `9k-montage` together: `9k-montage` copies its engine and brand files from the sibling `9k-motion` skill. `9k-trial-reels` needs `9k-montage` (cut) and `9k-reel-cover` (cover) beside it, plus `numpy` for its audio check. `9k-reel-cover` stands alone. The [install guide](docs/install.md) covers the tools, the whisper model and troubleshooting.
 
 To hack on the skills, clone the repo and link them, so edits take effect immediately:
 
@@ -35,6 +41,7 @@ To hack on the skills, clone the repo and link them, so edits take effect immedi
 git clone https://github.com/ismail9k/motion && cd motion
 ln -sfn "$PWD/skills/9k-motion" ~/.claude/skills/9k-motion
 ln -sfn "$PWD/skills/9k-montage" ~/.claude/skills/9k-montage
+ln -sfn "$PWD/skills/9k-trial-reels" ~/.claude/skills/9k-trial-reels
 ln -sfn "$PWD/skills/9k-reel-cover" ~/.claude/skills/9k-reel-cover
 ```
 
@@ -51,6 +58,7 @@ ln -sfn "$PWD/skills/9k-reel-cover" ~/.claude/skills/9k-reel-cover
 
 - Ask for a motion graphic, or type `/9k-motion`
 - "Do the montage for <video>", or type `/9k-montage`
+- "Trim this and make three versions for trial reels", or type `/9k-trial-reels`
 - "Make a reel cover for <video>", or type `/9k-reel-cover`
 - By hand: `bash skills/9k-motion/scripts/new-film.sh ~/films/my-film`, or `bash skills/9k-montage/scripts/new-montage.sh <video>`, then follow the house rules in the generated `CLAUDE.md`
 

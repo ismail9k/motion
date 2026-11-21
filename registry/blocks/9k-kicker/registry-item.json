@@ -1,0 +1,31 @@
+{
+  "$schema": "https://hyperframes.heygen.com/schema/registry-item.json",
+  "name": "9k-kicker",
+  "type": "hyperframes:block",
+  "title": "9k kicker title",
+  "description": "A panel title: a typed Latin term (the field or product name) with its Arabic name under it, on the dark 9k panel. Use at the start of an explainer block.",
+  "tags": [
+    "title-card",
+    "lower-third",
+    "9k"
+  ],
+  "author": "ismail9k",
+  "authorUrl": "https://ismail9k.com",
+  "license": "MIT",
+  "minCliVersion": "0.9.77",
+  "dimensions": {
+    "width": 1080,
+    "height": 608
+  },
+  "duration": 3,
+  "registryDependencies": [
+    "9k-tokens"
+  ],
+  "files": [
+    {
+      "path": "9k-kicker.html",
+      "target": "compositions/9k-kicker.html",
+      "type": "hyperframes:composition"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://hyperframes.heygen.com/schema/registry.json",
+  "name": "9k",
+  "homepage": "https://github.com/ismail9k/motion",
+  "items": [
+    {
+      "name": "9k-tokens",
+      "type": "hyperframes:component"
+    },
+    {
+      "name": "9k-split-layout",
+      "type": "hyperframes:component"
+    },
+    {
+      "name": "9k-captions",
+      "type": "hyperframes:block"
+    },
+    {
+      "name": "9k-hook-stamp",
+      "type": "hyperframes:block"
+    },
+    {
+      "name": "9k-band",
+      "type": "hyperframes:block"
+    },
+    {
+      "name": "9k-kicker",
+      "type": "hyperframes:block"
+    },
+    {
+      "name": "9k-number-roll",
+      "type": "hyperframes:block"
+    },
+    {
+      "name": "9k-verdict",
+      "type": "hyperframes:block"
+    }
+  ]
+}

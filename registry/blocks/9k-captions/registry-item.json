@@ -1,0 +1,32 @@
+{
+  "$schema": "https://hyperframes.heygen.com/schema/registry-item.json",
+  "name": "9k-captions",
+  "type": "hyperframes:block",
+  "title": "9k bilingual captions",
+  "description": "Arabic word-by-word captions (≤ 4 words, orange keyword pill) with one English line per sentence, in the 9k style. Cues are [start, end, \"arabic with *keyword\", \"english\"].",
+  "tags": [
+    "captions",
+    "arabic",
+    "bilingual",
+    "9k"
+  ],
+  "author": "ismail9k",
+  "authorUrl": "https://ismail9k.com",
+  "license": "MIT",
+  "minCliVersion": "0.9.77",
+  "dimensions": {
+    "width": 1080,
+    "height": 1920
+  },
+  "duration": 8,
+  "registryDependencies": [
+    "9k-tokens"
+  ],
+  "files": [
+    {
+      "path": "9k-captions.html",
+      "target": "compositions/9k-captions.html",
+      "type": "hyperframes:composition"
+    }
+  ]
+}

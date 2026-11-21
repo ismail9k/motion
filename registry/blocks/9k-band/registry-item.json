@@ -1,0 +1,31 @@
+{
+  "$schema": "https://hyperframes.heygen.com/schema/registry-item.json",
+  "name": "9k-band",
+  "type": "hyperframes:block",
+  "title": "9k climax band",
+  "description": "The once-per-film climax band: a full-width brand-green strip that snaps open with one big line, and an orange underline drawing under the key word. Hold ≤ 1.2 s.",
+  "tags": [
+    "emphasis",
+    "title-card",
+    "9k"
+  ],
+  "author": "ismail9k",
+  "authorUrl": "https://ismail9k.com",
+  "license": "MIT",
+  "minCliVersion": "0.9.77",
+  "dimensions": {
+    "width": 1080,
+    "height": 608
+  },
+  "duration": 1.2,
+  "registryDependencies": [
+    "9k-tokens"
+  ],
+  "files": [
+    {
+      "path": "9k-band.html",
+      "target": "compositions/9k-band.html",
+      "type": "hyperframes:composition"
+    }
+  ]
+}

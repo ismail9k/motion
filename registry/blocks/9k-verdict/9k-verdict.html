@@ -1,0 +1,81 @@
+<!doctype html>
+<html data-composition-variables='[{"id":"rightLabel","type":"string","label":"Right label (the guess)","default":"بيقترح حل"},{"id":"leftLabel","type":"string","label":"Left label (the proof)","default":"مثبت رياضيًا"},{"id":"code","type":"string","label":"Equation line","default":"min f(x)"},{"id":"note","type":"string","label":"Equation note","default":"gap = 0"},{"id":"rightAt","type":"number","label":"Right pops at (s)","default":0.2,"min":0,"max":10,"step":0.05},{"id":"leftAt","type":"number","label":"Left pops at (s)","default":1.6,"min":0,"max":10,"step":0.05},{"id":"panel","type":"boolean","label":"Dark 9k panel behind","default":true}]'>
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <template>
+<style>
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2") format("woff2");font-weight:400;font-display:block;unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-arabic-600-normal.woff2") format("woff2");font-weight:600;font-display:block;unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-arabic-700-normal.woff2") format("woff2");font-weight:700;font-display:block;unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-latin-400-normal.woff2") format("woff2");font-weight:400;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-latin-600-normal.woff2") format("woff2");font-weight:600;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-latin-700-normal.woff2") format("woff2");font-weight:700;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Sans";src:url("assets/fonts/ibm-plex-sans-latin-400-normal.woff2") format("woff2");font-weight:400;font-display:block}
+@font-face{font-family:"IBM Plex Sans";src:url("assets/fonts/ibm-plex-sans-latin-500-normal.woff2") format("woff2");font-weight:500;font-display:block}
+@font-face{font-family:"IBM Plex Sans";src:url("assets/fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2");font-weight:600;font-display:block}
+@font-face{font-family:"IBM Plex Sans";src:url("assets/fonts/ibm-plex-sans-latin-700-normal.woff2") format("woff2");font-weight:700;font-display:block}
+@font-face{font-family:"IBM Plex Mono";src:url("assets/fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");font-weight:400;font-display:block}
+@font-face{font-family:"IBM Plex Mono";src:url("assets/fonts/ibm-plex-mono-latin-700-normal.woff2") format("woff2");font-weight:700;font-display:block}
+
+.k9{position:absolute;inset:0;overflow:hidden;pointer-events:none;direction:rtl;color:#F5F5F5;font-family:"IBM Plex Sans Arabic","IBM Plex Sans",sans-serif;-webkit-font-smoothing:antialiased}
+.k9 .abs{position:absolute}
+.k9 .lat{font-family:"IBM Plex Sans",sans-serif;direction:ltr;unicode-bidi:isolate}
+.k9 .mono{font-family:"IBM Plex Mono",monospace;direction:ltr;unicode-bidi:isolate}
+.k9 .center{position:absolute;left:0;right:0;display:flex;justify-content:center}
+.k9 .caret{display:inline-block;width:.08em;height:.9em;margin:0 .04em;background:#E85A02;vertical-align:-.1em}
+.k9 .glow{position:absolute;width:760px;height:760px;border-radius:50%;filter:blur(90px);opacity:.22}
+.k9 .panelbg{position:absolute;inset:0;background:#0F0F0F}
+
+
+[data-k9="9k-verdict"] .half{position:absolute;top:96px;width:460px;height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+[data-k9="9k-verdict"] .half .t{font-size:46px;font-weight:700}
+
+</style>
+<div id="root" data-composition-id="9k-verdict" data-width="1080" data-height="608">
+  <div class="k9 9k-verdict" data-k9="9k-verdict">
+<div data-role="bg"><div class="panelbg"></div><div class="glow" data-layout-ignore style="left:-300px;top:-420px;background:#166434"></div><div class="glow" data-layout-ignore style="right:-360px;bottom:-480px;background:#E85A02;opacity:.12"></div></div>
+  <div class="half" data-role="r" style="right:40px">
+    <svg width="200" height="150" viewBox="0 0 200 150"><path d="M20 20 Q20 6 34 6 L166 6 Q180 6 180 20 L180 96 Q180 110 166 110 L70 110 L36 140 L40 110 L34 110 Q20 110 20 96 Z" fill="#242424" stroke="#404040" stroke-width="4"/><text x="100" y="80" text-anchor="middle" font-size="70" font-weight="700" fill="#E85A02" font-family="IBM Plex Sans">?</text></svg>
+    <div class="t" data-role="rt"></div>
+  </div>
+  <div class="half" data-role="l" style="left:40px">
+    <svg width="230" height="150" viewBox="0 0 230 150"><rect x="6" y="6" width="218" height="138" rx="20" fill="#1F3327" stroke="#2FB161" stroke-width="4"/><text data-role="code" x="100" y="66" text-anchor="middle" font-size="34" fill="#F5F5F5" font-family="IBM Plex Mono"></text><text data-role="note" x="100" y="110" text-anchor="middle" font-size="28" fill="#999999" font-family="IBM Plex Mono"></text><circle cx="196" cy="34" r="20" fill="#166434"/><path d="M186 35 L193 42 L206 27" fill="none" stroke="#FFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="t" data-role="lt"></div>
+  </div>
+  </div>
+</div>
+<script>
+(function(){
+
+const clamp=(x,a,b)=>Math.min(b===undefined?1:b,Math.max(a===undefined?0:a,x));
+function spring(t,k,d){if(t<=0)return 0;const w0=Math.sqrt(k),z=d/(2*w0);if(z<1){const wd=w0*Math.sqrt(1-z*z);return 1-Math.exp(-z*w0*t)*(Math.cos(wd*t)+(z*w0/wd)*Math.sin(wd*t));}return 1-Math.exp(-w0*t)*(1+w0*t);}
+const SPR={snappy:[320,34],default:[170,26],heavy:[120,24]};
+const sp=(t,p)=>{const s=SPR[p||'default'];return spring(t,s[0],s[1]);};
+function bez(x1,y1,x2,y2){const cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx-bx,cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy-by;const sx=s=>((ax*s+bx)*s+cx)*s,sy=s=>((ay*s+by)*s+cy)*s;return x=>{x=clamp(x);let s=x;for(let i=0;i<8;i++){const dx=(3*ax*s+2*bx)*s+cx;if(Math.abs(dx)<1e-6)break;s-=(sx(s)-x)/dx;}return sy(clamp(s));};}
+const e9=bez(.4,0,.2,1);
+const tw=(t,s,d)=>e9(clamp((t-s)/d));
+const op=(el,a)=>{el.style.opacity=String(clamp(a));};
+const pop=(el,t,s,p)=>{const k=sp(t-s,p||'snappy');op(el,clamp((t-s)*7));el.style.transform='translateY('+((1-k)*28).toFixed(1)+'px) scale('+(0.94+0.06*k).toFixed(4)+')';return k;};
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function typed(el,txt,t,s,cps,keep){const n=Math.max(0,Math.min(txt.length,Math.floor((t-s)*(cps||20))));const typing=n<txt.length&&t>=s;const blink=((t-s)%1.06)<.53;const show=t>=s&&(typing||(keep&&blink));el.innerHTML=esc(txt.slice(0,n))+(show?'<span class="caret"></span>':'');return n;}
+const NS='http://www.w3.org/2000/svg';
+const mk=(tag,attrs,parent)=>{const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;};
+
+const V=Object.assign({"rightLabel":"بيقترح حل","leftLabel":"مثبت رياضيًا","code":"min f(x)","note":"gap = 0","rightAt":0.2,"leftAt":1.6,"panel":true},(window.__hyperframes&&window.__hyperframes.getVariables&&window.__hyperframes.getVariables())||{});
+const all=document.querySelectorAll('[data-k9="9k-verdict"]:not([data-k9-on])');
+const root=all[all.length-1];root.setAttribute('data-k9-on','1');
+const $=(r)=>root.querySelector('[data-role="'+r+'"]');
+
+if(!V.panel)$('bg').style.display='none';$('rt').textContent=String(V.rightLabel);$('lt').textContent=String(V.leftLabel);$('code').textContent=String(V.code);$('note').textContent=String(V.note);
+const r=$('r'),l=$('l');
+function render(t){pop(r,t,V.rightAt,'default');pop(l,t,V.leftAt,'default');}
+const D=Math.max(0.1,Math.max(V.rightAt,V.leftAt)+1.2);
+const tl=gsap.timeline({paused:true}),clock={t:0};
+tl.to(clock,{t:D,duration:D,ease:'none',onUpdate:()=>render(clock.t)},0);
+render(0);
+window.__timelines["9k-verdict"]=tl;
+})();
+</script>
+    </template>
+  </body>
+</html>
