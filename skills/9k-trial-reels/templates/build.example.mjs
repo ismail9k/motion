@@ -765,7 +765,7 @@ function build(name) {
   const dir = path.join(HERE, name);
   fs.rmSync(path.join(dir, 'compositions'), { recursive: true, force: true });
   fs.mkdirSync(path.join(dir, 'compositions'), { recursive: true });
-  // 9k registry blocks (installed once in shared/ with `npx hyperframes add 9k`), copied so Studio edits stay per version
+  // 9k registry blocks (installed once with `node <motion repo>/registry/install.mjs hf/shared`), copied so Studio edits stay per version
   for (const sub of ['compositions', 'compositions/components']) { const from = path.join(SH, sub); if (!fs.existsSync(from)) continue; fs.mkdirSync(path.join(dir, sub), { recursive: true }); for (const f of fs.readdirSync(from)) if (f.endsWith('.html')) fs.copyFileSync(path.join(from, f), path.join(dir, sub, f)); }
   // assets: hard links to shared
   const link = (rel) => { const s = path.join(SH, rel), d = path.join(dir, rel); fs.mkdirSync(path.dirname(d), { recursive: true }); if (fs.existsSync(d) && fs.statSync(d).ino === fs.statSync(s).ino) return; fs.rmSync(d, { force: true }); fs.linkSync(s, d); }; // relink when shared/ was replaced

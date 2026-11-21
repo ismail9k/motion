@@ -11,8 +11,8 @@ Three agent skills for 9k video: motion graphics from a brief, full edits of you
 
 **[`registry/`](registry/README.md): the 9k HyperFrames registry.** Reusable blocks (bilingual captions, hook stamp,
 climax band, kicker title, number roll, verdict split) and components (9k tokens and fonts, the split layout), so
-every HyperFrames edit uses the same type, colors and motion. Point a project's `hyperframes.json` at
-`https://raw.githubusercontent.com/ismail9k/motion/main/registry`, then run `npx hyperframes add 9k-band`.
+every HyperFrames edit uses the same type, colors and motion. Install into a project with
+`node registry/install.mjs <project> [block]`; the [registry README](registry/README.md) covers editing and `hyperframes add`.
 
 Every frame is styled from the [9k identity](docs/identity.md): colors, type, the Ismail9k → 9k wordmark, Nino. Install it to make 9k content, not as a general-purpose motion kit.
 
