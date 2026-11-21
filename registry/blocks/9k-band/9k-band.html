@@ -1,0 +1,77 @@
+<!doctype html>
+<html data-composition-variables='[{"id":"text","type":"string","label":"Line","default":"مثبت رياضيًا"},{"id":"underline","type":"string","label":"Word to underline (must be in the line)","default":"رياضيًا"},{"id":"top","type":"number","label":"Top (px)","default":214,"min":0,"max":1700},{"id":"size","type":"number","label":"Text size (px)","default":84,"min":48,"max":120}]'>
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <template>
+<style>
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2") format("woff2");font-weight:400;font-display:block;unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-arabic-600-normal.woff2") format("woff2");font-weight:600;font-display:block;unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-arabic-700-normal.woff2") format("woff2");font-weight:700;font-display:block;unicode-range:U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0897-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-latin-400-normal.woff2") format("woff2");font-weight:400;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-latin-600-normal.woff2") format("woff2");font-weight:600;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Sans Arabic";src:url("assets/fonts/ibm-plex-sans-arabic-latin-700-normal.woff2") format("woff2");font-weight:700;font-display:block;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Sans";src:url("assets/fonts/ibm-plex-sans-latin-400-normal.woff2") format("woff2");font-weight:400;font-display:block}
+@font-face{font-family:"IBM Plex Sans";src:url("assets/fonts/ibm-plex-sans-latin-500-normal.woff2") format("woff2");font-weight:500;font-display:block}
+@font-face{font-family:"IBM Plex Sans";src:url("assets/fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2");font-weight:600;font-display:block}
+@font-face{font-family:"IBM Plex Sans";src:url("assets/fonts/ibm-plex-sans-latin-700-normal.woff2") format("woff2");font-weight:700;font-display:block}
+@font-face{font-family:"IBM Plex Mono";src:url("assets/fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");font-weight:400;font-display:block}
+@font-face{font-family:"IBM Plex Mono";src:url("assets/fonts/ibm-plex-mono-latin-700-normal.woff2") format("woff2");font-weight:700;font-display:block}
+
+.k9{position:absolute;inset:0;overflow:hidden;pointer-events:none;direction:rtl;color:#F5F5F5;font-family:"IBM Plex Sans Arabic","IBM Plex Sans",sans-serif;-webkit-font-smoothing:antialiased}
+.k9 .abs{position:absolute}
+.k9 .lat{font-family:"IBM Plex Sans",sans-serif;direction:ltr;unicode-bidi:isolate}
+.k9 .mono{font-family:"IBM Plex Mono",monospace;direction:ltr;unicode-bidi:isolate}
+.k9 .center{position:absolute;left:0;right:0;display:flex;justify-content:center}
+.k9 .caret{display:inline-block;width:.08em;height:.9em;margin:0 .04em;background:#E85A02;vertical-align:-.1em}
+.k9 .glow{position:absolute;width:760px;height:760px;border-radius:50%;filter:blur(90px);opacity:.22}
+.k9 .panelbg{position:absolute;inset:0;background:#0F0F0F}
+
+
+[data-k9="9k-band"] .band{position:absolute;left:0;right:0;height:180px;background:#166434;display:flex;align-items:center;justify-content:center;transform-origin:50% 50%}
+[data-k9="9k-band"] .bt{position:relative;font-weight:700;color:#FFFFFF;white-space:nowrap}
+[data-k9="9k-band"] .uw{position:relative}
+[data-k9="9k-band"] .ul{position:absolute;left:0;bottom:-6px;height:9px;width:0;background:#E85A02;border-radius:5px}
+
+</style>
+<div id="root" data-composition-id="9k-band" data-width="1080" data-height="608">
+  <div class="k9 9k-band" data-k9="9k-band">
+<div class="band" data-role="band"><div class="bt" data-role="bt"></div></div>
+  </div>
+</div>
+<script>
+(function(){
+
+const clamp=(x,a,b)=>Math.min(b===undefined?1:b,Math.max(a===undefined?0:a,x));
+function spring(t,k,d){if(t<=0)return 0;const w0=Math.sqrt(k),z=d/(2*w0);if(z<1){const wd=w0*Math.sqrt(1-z*z);return 1-Math.exp(-z*w0*t)*(Math.cos(wd*t)+(z*w0/wd)*Math.sin(wd*t));}return 1-Math.exp(-w0*t)*(1+w0*t);}
+const SPR={snappy:[320,34],default:[170,26],heavy:[120,24]};
+const sp=(t,p)=>{const s=SPR[p||'default'];return spring(t,s[0],s[1]);};
+function bez(x1,y1,x2,y2){const cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx-bx,cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy-by;const sx=s=>((ax*s+bx)*s+cx)*s,sy=s=>((ay*s+by)*s+cy)*s;return x=>{x=clamp(x);let s=x;for(let i=0;i<8;i++){const dx=(3*ax*s+2*bx)*s+cx;if(Math.abs(dx)<1e-6)break;s-=(sx(s)-x)/dx;}return sy(clamp(s));};}
+const e9=bez(.4,0,.2,1);
+const tw=(t,s,d)=>e9(clamp((t-s)/d));
+const op=(el,a)=>{el.style.opacity=String(clamp(a));};
+const pop=(el,t,s,p)=>{const k=sp(t-s,p||'snappy');op(el,clamp((t-s)*7));el.style.transform='translateY('+((1-k)*28).toFixed(1)+'px) scale('+(0.94+0.06*k).toFixed(4)+')';return k;};
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function typed(el,txt,t,s,cps,keep){const n=Math.max(0,Math.min(txt.length,Math.floor((t-s)*(cps||20))));const typing=n<txt.length&&t>=s;const blink=((t-s)%1.06)<.53;const show=t>=s&&(typing||(keep&&blink));el.innerHTML=esc(txt.slice(0,n))+(show?'<span class="caret"></span>':'');return n;}
+const NS='http://www.w3.org/2000/svg';
+const mk=(tag,attrs,parent)=>{const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;};
+
+const V=Object.assign({"text":"مثبت رياضيًا","underline":"رياضيًا","top":214,"size":84},(window.__hyperframes&&window.__hyperframes.getVariables&&window.__hyperframes.getVariables())||{});
+const all=document.querySelectorAll('[data-k9="9k-band"]:not([data-k9-on])');
+const root=all[all.length-1];root.setAttribute('data-k9-on','1');
+const $=(r)=>root.querySelector('[data-role="'+r+'"]');
+
+const band=$('band'),bt=$('bt');band.style.top=V.top+'px';bt.style.fontSize=V.size+'px';
+const txt=String(V.text),u=String(V.underline||''),i=u?txt.indexOf(u):-1;
+if(i>=0){bt.append(txt.slice(0,i));const w=document.createElement('span');w.className='uw';w.textContent=u;const l=document.createElement('span');l.className='ul';w.appendChild(l);bt.appendChild(w);bt.append(txt.slice(i+u.length));}else bt.textContent=txt;
+const ul=root.querySelector('.ul');
+function render(t){band.style.transform='scaleY('+sp(t,'snappy').toFixed(3)+')';op(band,t>0?1:0);if(ul)ul.style.width=(100*tw(t,.3,.3))+'%';}
+const D=Math.max(0.1,1.2);
+const tl=gsap.timeline({paused:true}),clock={t:0};
+tl.to(clock,{t:D,duration:D,ease:'none',onUpdate:()=>render(clock.t)},0);
+render(0);
+window.__timelines["9k-band"]=tl;
+})();
+</script>
+    </template>
+  </body>
+</html>

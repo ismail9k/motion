@@ -1,0 +1,32 @@
+{
+  "$schema": "https://hyperframes.heygen.com/schema/registry-item.json",
+  "name": "9k-hook-stamp",
+  "type": "hyperframes:block",
+  "title": "9k hook stamp",
+  "description": "The opening stamp: a typed headline in an orange-bordered pill that lands with a heavy spring, and an optional black-on-orange sub line typed after it.",
+  "tags": [
+    "hook",
+    "title-card",
+    "social",
+    "9k"
+  ],
+  "author": "ismail9k",
+  "authorUrl": "https://ismail9k.com",
+  "license": "MIT",
+  "minCliVersion": "0.9.77",
+  "dimensions": {
+    "width": 1080,
+    "height": 1920
+  },
+  "duration": 3.6,
+  "registryDependencies": [
+    "9k-tokens"
+  ],
+  "files": [
+    {
+      "path": "9k-hook-stamp.html",
+      "target": "compositions/9k-hook-stamp.html",
+      "type": "hyperframes:composition"
+    }
+  ]
+}

@@ -26,7 +26,7 @@ that edit into `build.mjs` first (`npx hyperframes catch-up` in the version fold
 | `VO` | his caption lines `[s, e, arabic, english]` in **cut time** (`work/transcript.cut.md` after `cut.mjs`, or words.json mapped through keep) | `*word` = orange keyword pill, `a~b` = keep together. Brand spellings: ChatGPT, Claude, NP-Hard, OR-Tools |
 | `CL` | captions of the reference clips, clip-local time | from the reference transcript |
 | `B` | VO **blocks** (cut-time ranges): one idea each, the unit versions reorder | a block can skip a sub-range: `[[a, b], [c, d]]` |
-| `S` | picture scenes: `{ html, css, js(render(t)), sfx: [[t, name], …] }`, one per block | times in block-local time; 9k tokens; one idea per scene |
+| `S` | picture scenes **no registry block covers** (registry blocks are hosts with `data-variable-values`, not entries here): `{ html, css, js(render(t)), sfx: [[t, name], …] }`, one per block | times in block-local time; 9k tokens; one idea per scene |
 | `VARIANTS` | per version: `items` (order of clips and blocks + which scene + params), `punch`, `mirror`, `center`, `hook` | the three versions differ HERE |
 | hooks (`hookA/B/C`) | the opening stamp per version | full-frame, ≤ 3.6 s |
 

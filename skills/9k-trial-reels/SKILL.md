@@ -75,6 +75,14 @@ claim, the provocative number, the line his rebuttal answers), and cut each one 
 with `ffmpeg -ss <in> -to <out>` (re-encoded, 9:16 centre crop or full 16:9 for the top panel). Then measure each
 clip's LUFS for `CLIP_LUFS`. Keep the clip and the sentence whole: never start or end one mid-word.
 
+**Blocks come from the 9k registry first** (`<motion repo>/registry/README.md`; it lists every block's variables).
+Install them once with `node <motion repo>/registry/install.mjs hf/shared`, which brings every block, both components
+and the fonts. `build.mjs` copies `shared/compositions/` into every version. To pick up a registry change later, run
+the same command again: it updates unedited files and keeps ones you edited. That gives you `9k-captions`, `9k-hook-stamp`, `9k-band`,
+`9k-kicker`, `9k-number-roll` and `9k-verdict`, plus `9k-split-layout` for the host. Wire each block as a host with
+`data-variable-values`. Write a custom scene in `build.mjs` only for a beat no block covers. If that beat will come back
+in later films, add it to `registry/src/items.mjs` instead.
+
 Copy `templates/build.example.mjs` to `hf/build.mjs`, rewrite its content, and keep its machinery. **Read
 `references/build.md` first.** Then run `node build.mjs`. Write the A/B/C table into `docs/plan.md`. It is a record,
 not an extra gate: build straight away.
@@ -123,6 +131,7 @@ With the cover, offer a short post caption: 1–2 Arabic lines plus 2–4 hashta
 
 | Thought | Reality |
 |---|---|
+| "I'll write a hook / band / number-roll scene for this film" | Use the 9k registry block and set its variables. Hand-written copies drift from the house style |
 | "I'll show a segment table and he edits cut.json" | He corrects the cut by dragging clips in Studio. Give him `hf/cut-review` |
 | "Normalize to −14 LUFS / speed him up a little" | His voice stays as recorded. Only reference clips get gain and 1.2x |
 | "The reference clip is just context, not in the reel" | In a reaction reel, the reference clips are the hook and the B-roll |

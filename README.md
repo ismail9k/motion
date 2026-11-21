@@ -9,6 +9,11 @@ Three agent skills for 9k video: motion graphics from a brief, full edits of you
 | [`9k-trial-reels`](skills/9k-trial-reels/SKILL.md) | **A raw take of you**, often reacting to a show or podcast clip | Three versions of one short for Instagram trial reels, through three gates you approve: the cut (you trim it yourself in a HyperFrames cut-review project), then three versions built in HyperFrames with different hooks and orders (each render audio-checked against your cut), then the cover. Finals land next to the source as `<yymmdd>-<slug>-A/B/C.mp4` |
 | [`9k-reel-cover`](skills/9k-reel-cover/SKILL.md) | A script or a video of you | A 9:16 reel cover in the locked 9k theme: one real frame relit by Codex image generation into the dark 9k studio, with the title, subtitle and brand marks typeset from a template, so no text is AI-drawn and every cover on the grid matches |
 
+**[`registry/`](registry/README.md): the 9k HyperFrames registry.** Reusable blocks (bilingual captions, hook stamp,
+climax band, kicker title, number roll, verdict split) and components (9k tokens and fonts, the split layout), so
+every HyperFrames edit uses the same type, colors and motion. Point a project's `hyperframes.json` at
+`https://raw.githubusercontent.com/ismail9k/motion/main/registry`, then run `npx hyperframes add 9k-band`.
+
 Every frame is styled from the [9k identity](docs/identity.md): colors, type, the Ismail9k → 9k wordmark, Nino. Install it to make 9k content, not as a general-purpose motion kit.
 
 ![The sample film that ships with 9k-motion](docs/img/identity/sample-film.gif)

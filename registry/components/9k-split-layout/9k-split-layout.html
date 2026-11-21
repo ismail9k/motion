@@ -1,0 +1,39 @@
+<!--
+  9k split layout for 1080x1920 reaction shorts. Paste the style block into the host styles and the markup into the
+  host root (data-width="1080" data-height="1920"). Keep the order: later siblings paint on top.
+
+    #k9-top     1080x608 panel at the top: the reference clip (a video clip), or a 9k block host
+                (data-width="1080" data-height="608") for a picture scene.
+    #k9-bot     the talking head. His 1080x1920 frame sits at top:-204px inside the panel, so the face lands
+                at y≈1040-1430 of the film. Tune --k9-face-y per take.
+    #k9-seam    a 4px dark line where the panels meet.
+    #k9-shade   darkens the top of his panel so captions above his head stay readable.
+    Full-frame blocks (9k-hook-stamp, 9k-captions) go after these, as direct children of the host root.
+
+  Jump-cut punch-ins: split his video at every jump cut into one video clip per piece (same src,
+  data-media-start = source time), and give alternate pieces class k9-punch, so no two neighbouring framings
+  match. --k9-punch is 1.06 for a calm edit, 1.10 for a fast one. Add k9-mirror to mirror him (never a clip
+  with burned-in text).
+-->
+<style>
+:root{--k9-face-y:-204px;--k9-punch:1.06}
+#k9-top{position:absolute;left:0;top:0;width:1080px;height:608px;overflow:hidden;background:#0F0F0F}
+#k9-top video{position:absolute;left:0;top:0;width:1080px;height:608px;object-fit:cover}
+#k9-bot{position:absolute;left:0;top:608px;width:1080px;height:1312px;overflow:hidden;background:#000}
+#k9-bot video{position:absolute;left:0;top:var(--k9-face-y);width:1080px;height:1920px;transform-origin:540px 660px}
+#k9-bot video.k9-punch{transform:scale(var(--k9-punch))}
+#k9-bot video.k9-mirror{transform:scaleX(-1)}
+#k9-bot video.k9-mirror.k9-punch{transform:scaleX(-1) scale(var(--k9-punch))}
+#k9-seam{position:absolute;left:0;top:606px;width:1080px;height:4px;background:#0F0F0F}
+#k9-shade{position:absolute;left:0;top:608px;width:1080px;height:300px;background:linear-gradient(to bottom,rgba(10,17,26,.62),rgba(10,17,26,.38) 60%,rgba(10,17,26,0))}
+</style>
+<div id="k9-top">
+  <!-- reference clip: <video id="ref1" class="clip" src="assets/c1.mp4" data-has-audio="true" data-start="0" data-duration="6" data-track-index="1" data-playback-rate="1.2"></video> -->
+  <!-- or a picture scene: <div id="roll1" data-composition-id="9k-number-roll" data-composition-src="compositions/9k-number-roll.html" data-start="6" data-duration="4.6" data-track-index="3" data-width="1080" data-height="608" style="position:absolute;inset:0"></div> -->
+</div>
+<div id="k9-bot">
+  <!-- <video id="vo1" class="clip" src="assets/vo.mp4" data-has-audio="true" data-start="0" data-duration="3.2" data-media-start="0" data-track-index="0"></video>
+       <video id="vo2" class="clip k9-punch" src="assets/vo.mp4" data-has-audio="true" data-start="3.2" data-duration="2.7" data-media-start="3.2" data-track-index="0"></video> -->
+</div>
+<div id="k9-seam"></div>
+<div id="k9-shade"></div>

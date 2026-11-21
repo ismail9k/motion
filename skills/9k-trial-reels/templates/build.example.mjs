@@ -765,10 +765,12 @@ function build(name) {
   const dir = path.join(HERE, name);
   fs.rmSync(path.join(dir, 'compositions'), { recursive: true, force: true });
   fs.mkdirSync(path.join(dir, 'compositions'), { recursive: true });
+  // 9k registry blocks (installed once in shared/ with `npx hyperframes add 9k`), copied so Studio edits stay per version
+  for (const sub of ['compositions', 'compositions/components']) { const from = path.join(SH, sub); if (!fs.existsSync(from)) continue; fs.mkdirSync(path.join(dir, sub), { recursive: true }); for (const f of fs.readdirSync(from)) if (f.endsWith('.html')) fs.copyFileSync(path.join(from, f), path.join(dir, sub, f)); }
   // assets: hard links to shared
   const link = (rel) => { const s = path.join(SH, rel), d = path.join(dir, rel); fs.mkdirSync(path.dirname(d), { recursive: true }); if (fs.existsSync(d) && fs.statSync(d).ino === fs.statSync(s).ino) return; fs.rmSync(d, { force: true }); fs.linkSync(s, d); }; // relink when shared/ was replaced
   for (const sub of ['assets', 'assets/fonts', 'assets/sfx', 'assets/img']) for (const f of fs.readdirSync(path.join(SH, sub))) if (fs.statSync(path.join(SH, sub, f)).isFile()) link(path.join(sub, f));
-  fs.writeFileSync(path.join(dir, 'hyperframes.json'), JSON.stringify({ $schema: 'https://hyperframes.heygen.com/schema/hyperframes.json', registry: 'https://raw.githubusercontent.com/heygen-com/hyperframes/main/registry', paths: { blocks: 'compositions', components: 'compositions/components', assets: 'assets' }, media: { autoProxy: true } }, null, 2));
+  fs.writeFileSync(path.join(dir, 'hyperframes.json'), JSON.stringify({ $schema: 'https://hyperframes.heygen.com/schema/hyperframes.json', registry: 'https://raw.githubusercontent.com/ismail9k/motion/main/registry', paths: { blocks: 'compositions', components: 'compositions/components', assets: 'assets' }, media: { autoProxy: true } }, null, 2));
   fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'shark-or-' + name.toLowerCase(), private: true, type: 'module', scripts: { dev: 'npx --yes hyperframes@0.9.77 preview', check: 'npx --yes hyperframes@0.9.77 check', render: 'npx --yes hyperframes@0.9.77 render' } }, null, 2));
 
   const topEls = [], botEls = [], midEls = [], midWin = [], hosts = [], arCaps = [], enCaps = [];

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://hyperframes.heygen.com/schema/registry-item.json",
+  "name": "9k-verdict",
+  "type": "hyperframes:block",
+  "title": "9k verdict split",
+  "description": "Two answers side by side: a chat bubble with \"?\" (one suggests) against a green equation card with ✓ (the other proves). Each side pops in on its word.",
+  "tags": [
+    "comparison",
+    "split",
+    "data-viz",
+    "9k"
+  ],
+  "author": "ismail9k",
+  "authorUrl": "https://ismail9k.com",
+  "license": "MIT",
+  "minCliVersion": "0.9.77",
+  "dimensions": {
+    "width": 1080,
+    "height": 608
+  },
+  "duration": 4,
+  "registryDependencies": [
+    "9k-tokens"
+  ],
+  "files": [
+    {
+      "path": "9k-verdict.html",
+      "target": "compositions/9k-verdict.html",
+      "type": "hyperframes:composition"
+    }
+  ]
+}

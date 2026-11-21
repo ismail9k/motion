@@ -1,0 +1,32 @@
+{
+  "$schema": "https://hyperframes.heygen.com/schema/registry-item.json",
+  "name": "9k-number-roll",
+  "type": "hyperframes:block",
+  "title": "9k number roll",
+  "description": "A big number that rolls into place digit by digit (odometer) in a pill, with an orange label: for the one stat a sentence turns on.",
+  "tags": [
+    "data-viz",
+    "stat",
+    "counter",
+    "9k"
+  ],
+  "author": "ismail9k",
+  "authorUrl": "https://ismail9k.com",
+  "license": "MIT",
+  "minCliVersion": "0.9.77",
+  "dimensions": {
+    "width": 1080,
+    "height": 608
+  },
+  "duration": 4.6,
+  "registryDependencies": [
+    "9k-tokens"
+  ],
+  "files": [
+    {
+      "path": "9k-number-roll.html",
+      "target": "compositions/9k-number-roll.html",
+      "type": "hyperframes:composition"
+    }
+  ]
+}
