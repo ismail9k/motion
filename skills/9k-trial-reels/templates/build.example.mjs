@@ -724,8 +724,8 @@ function captionsFile(id, ar, en, D, mid = []) {
 <style>
 ${fontFaces()}
 #${id}-cap{position:absolute;inset:0;pointer-events:none}
-#${id}-cap .stack{position:absolute;left:140px;right:140px;top:${BY + 22}px;display:flex;flex-direction:column;align-items:center;gap:8px}
-#${id}-cap .ar{display:flex;justify-content:center;flex-wrap:wrap;gap:0 .26em;direction:rtl;font:700 60px/1.3 "IBM Plex Sans Arabic","IBM Plex Sans",sans-serif;color:#F5F5F5;-webkit-text-stroke:9px rgba(10,17,26,.9);paint-order:stroke fill;text-align:center}
+#${id}-cap .stack{position:absolute;left:60px;right:60px;top:${BY + 22}px;display:flex;flex-direction:column;align-items:center;gap:8px}
+#${id}-cap .ar{display:flex;justify-content:center;flex-wrap:nowrap;white-space:nowrap;gap:0 .26em;direction:rtl;font:700 52px/1.3 "IBM Plex Sans Arabic","IBM Plex Sans",sans-serif;color:#F5F5F5;-webkit-text-stroke:9px rgba(10,17,26,.9);paint-order:stroke fill;text-align:center}
 #${id}-cap .ar span{display:inline-block;unicode-bidi:isolate}
 #${id}-cap .ar span.k{background:#E85A02;color:#000;-webkit-text-stroke:0;border-radius:14px;padding:0 .2em}
 #${id}-cap .en{text-align:center;direction:ltr;font:500 34px/1.3 "IBM Plex Sans",sans-serif;color:rgba(245,245,245,.94);-webkit-text-stroke:6px rgba(10,17,26,.9);paint-order:stroke fill}
@@ -745,7 +745,7 @@ function render(t){
   if(m!==curM){curM=m;stack.style.top=m?'auto':'';stack.style.bottom=m?'${H - MY + 24}px':'';}
   let a=-1;for(let i=0;i<AR.length;i++){if(t>=AR[i].s&&t<AR[i].e){a=i;break;}}
   if(a!==curA){curA=a;ar.innerHTML='';spans=[];if(a>=0){AR[a].w.forEach(w=>{const s=document.createElement('span');s.textContent=w[0];ar.appendChild(s);spans.push(s);});}}
-  if(a>=0)AR[a].w.forEach((w,i)=>{const on=t>=w[1];spans[i].style.opacity=on?'1':'0';spans[i].className=(w[2]&&on)?'k':'';});
+  if(a>=0)AR[a].w.forEach((w,i)=>{const on=t>=w[1];spans[i].style.opacity=on?'1':'.38';spans[i].className=(w[2]&&on)?'k':'';});
   let e=-1;for(let i=0;i<EN.length;i++){if(t>=EN[i].s&&t<EN[i].e){e=i;break;}}
   if(e!==curE){curE=e;en.textContent=e>=0?EN[e].x:'';}
 }

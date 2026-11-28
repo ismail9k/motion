@@ -1,7 +1,7 @@
 // node <skill>/scripts/recut.mjs [keep=work/keep.json] [out=hf/shared/assets/vo.mp4]     (run in the project root)
 // Cuts the voiceover from the ORIGINAL take (montage.json → source) by the keep list: frame-exact video trims and
 // sample-exact audio trims from the same frame numbers (no drift), an 8 ms fade at every joint (no clicks), no other
-// audio processing (his voice stays as recorded). Then RELINKS every per-version copy (hf/*/assets/<same name>):
+// audio processing (his voice stays as recorded). A light fix in work/grade.txt is applied to the picture. Then RELINKS every per-version copy (hf/*/assets/<same name>):
 // those are hard links, and a replaced file leaves them pointing at the old voiceover.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,12 +16,15 @@ const v = pr.find((s) => s.codec_type === 'video'), a = pr.find((s) => s.codec_t
 const [fn, fd] = v.r_frame_rate.split('/').map(Number), FPS = fn / fd, SR = +a.sample_rate;
 if (['arib-std-b67', 'smpte2084'].includes(v.color_transfer)) console.warn(`⚠ HDR source (${v.color_transfer}): this writes 8-bit SDR for HyperFrames. Check skin tones in a snapshot.`);
 
+// an approved light fix lives in work/grade.txt (one ffmpeg filter chain); this cut is from the ORIGINAL take, so it is applied here
+const GRADE = fs.existsSync('work/grade.txt') ? ',' + fs.readFileSync('work/grade.txt', 'utf8').trim().replace(/^,|,$/g, '') : '';
+if (GRADE) console.log('grade: work/grade.txt');
 const parts = [];
 keep.forEach(([s, e], i) => {
   const f0 = Math.round(s * FPS), f1 = Math.round(e * FPS);
   const a0 = Math.round((f0 / FPS) * SR), a1 = Math.round((f1 / FPS) * SR);
   const d = (f1 - f0) / FPS;
-  parts.push(`[0:v]trim=start_frame=${f0}:end_frame=${f1},setpts=PTS-STARTPTS,scale=1080:1920,setsar=1[v${i}];` +
+  parts.push(`[0:v]trim=start_frame=${f0}:end_frame=${f1},setpts=PTS-STARTPTS,scale=1080:1920${GRADE},setsar=1[v${i}];` +
     `[0:a]atrim=start_sample=${a0}:end_sample=${a1},asetpts=PTS-STARTPTS,afade=t=in:d=0.008,afade=t=out:st=${Math.max(0, d - 0.008).toFixed(4)}:d=0.008[a${i}]`);
 });
 const graph = parts.join(';') + ';' + keep.map((_, i) => `[v${i}][a${i}]`).join('') + `concat=n=${keep.length}:v=1:a=1[v][a]`;
