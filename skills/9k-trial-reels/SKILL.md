@@ -40,10 +40,11 @@ wants. **One file per version:** a new render replaces the delivered one, and th
 bash <montage>/scripts/new-montage.sh "<video>" "<source folder>/<yymmdd>-<slug>"   # <montage> = 9k-montage skill dir
 cd "<source folder>/<yymmdd>-<slug>" && node scripts/ingest.mjs --lang ar
 ```
-Read `work/transcript.md`. Put retakes and false starts in `edit.json` → `cut.drop`, keeping the corrected take, and
+Run `node scripts/takes.mjs` and read `work/takes.md` (one line per spoken stretch, each transcribed on its own: the whole-file transcript drifts on a take with long pauses). Put retakes and false starts in `edit.json` → `cut.drop`, keeping the corrected take, and
 set `tail: 0`. Silence is cut from the measured audio, never from word gaps (9k-montage craft §2). Then:
 ```bash
-node scripts/cut.mjs                                   # → work/keep.json
+node scripts/cut.mjs                                   # → work/keep.json, work/cut.mov
+# prove it reads as one pass before showing it: re-transcribe work/cut.mov's audio (9k-montage craft §2)
 node <skill>/scripts/cut-review.mjs                    # → hf/cut-review: one clip per kept piece, labelled
 cd hf/cut-review && npx --yes hyperframes@latest preview --background
 ```
@@ -57,7 +58,22 @@ node <skill>/scripts/read-cut.mjs        # his edit → work/keep.json; prints e
 node <skill>/scripts/recut.mjs           # → hf/shared/assets/vo.mp4, frame/sample exact; relinks version copies
 cp work/keep.json work/keep.built.json   # the cut every time in build.mjs is written against
 ```
-Read back what he removed as one short list, so a slip shows up before you build on it.
+Read back what he removed as one short list, so a slip shows up before you build on it. `read-cut.mjs` labels a range
+with the drifted words around it, so a trimmed pause can print as "شغلك وما". Before you report lost words,
+re-transcribe that stretch of the new `vo.mp4`.
+
+**Hooks.** List every hook he recorded (a line that could open the film) and keep them all in the cut: each version
+opens on a different one. If he recorded fewer hooks than versions, the extra version opens on his first instruction
+line (for example "open X and type Y") with a typed title stamp.
+
+If he checked the cut in a 9k-montage `studio/` project instead of `hf/cut-review`, `read-cut.mjs` does not read it: diff
+`studio/index.html` against `studio/.hyperframes/backup/`, put each changed clip's range into `work/keep.json`
+yourself, then run `recut.mjs`.
+
+**Light.** If he asks to fix the light between the gates, follow 9k-montage craft §1 "Light" and save the approved
+filter chain in `work/grade.txt`. `recut.mjs` cuts from the original take and bakes that file in; without it the
+voiceover goes back to the ungraded picture. If versions already exist, run `recut.mjs` again, then render, `vocheck.py`
+and `deliver.sh` for each. The chain is for SDR takes; on an HDR take (HLG/PQ) say so and tone-map first, never apply it as is.
 
 ## Gate 2: three versions
 
@@ -83,38 +99,66 @@ the same command again: it updates unedited files and keeps ones you edited. Tha
 `data-variable-values`. Write a custom scene in `build.mjs` only for a beat no block covers. If that beat will come back
 in later films, add it to `registry/src/items.mjs` instead.
 
-Copy `templates/build.example.mjs` to `hf/build.mjs`, rewrite its content, and keep its machinery. **Read
-`references/build.md` first.** Then run `node build.mjs`. Write the A/B/C table into `docs/plan.md`. It is a record,
-not an extra gate: build straight away.
+The installer brings no SFX. Copy the house set (`pop-hand`, `fast-whoosh`, `mouse-click-2`, `dull-thud`,
+`keyboard-typing-realistic`, `notification-ding`, `sideways-record-needle`, `bass-impact`) from the last film's
+`hf/shared/assets/sfx/` (`mdfind -name fast-whoosh.wav`) into `hf/shared/assets/sfx/`.
+
+**A reel with no reference video** (his own script, his own b-roll) keeps the three-version rule but not the
+reaction layout. Read `references/build.md` → "A talk with b-roll" before you plan it.
+
+Copy the template that fits to `hf/build.mjs`: `templates/build.example.mjs` for a reaction reel, or
+`templates/build.broll.mjs` for a talk with b-roll (it has the full, broll, card, split and tags layouts). Rewrite its
+content and keep its machinery. **Read `references/build.md` first.** Then run `node build.mjs`. Write the A/B/C
+table into `docs/plan.md`. It is a record, not an extra gate: build straight away.
 
 House rules for every version:
 - **His voice stays exactly as recorded:** no normalizing, denoising, compression or speed change.
 - **Reference clips:** play at 1.2x with pitch preserved, with plain gain to ≈ −19.5 LUFS.
 - **Sound:** SFX sit 8–14 dB under the voice. No music. No end card: the film ends on his last word.
-- **Captions:** Arabic word by word with an orange keyword pill, plus one English line per sentence. They stay inside
-  the safe band (y 288–1248).
-- **Layout:** split, with the reference clip or picture scene in a 1080×608 panel on top and him below, or the
-  reference clip centred alone.
+- **Captions:** the whole Arabic chunk shows dimmed (opacity .38) and each word goes to full as he says it, never hidden; the orange keyword pill appears on its word. Plus one English line per sentence. Each Arabic chunk sits on **one line** at 52px (`nowrap`, stack inset 60 px): run `node <skill>/scripts/capwidth.mjs` after every build and shorten any line it flags. They stay inside
+  the safe band (y 288–1248); the one exception is the band under a full-frame b-roll cutaway (y 1180–1320, still above
+  the platform UI).
+- **Layout:** in a reaction reel, split, with the reference clip or picture scene in a 1080×608 panel on top and him
+  below, or the reference clip centred alone. In a reel with no reference video, the layout in `references/build.md` →
+  "A talk with b-roll".
 
 Verify each version before showing anything. `<pin>` is one HyperFrames version for the whole project: the latest at
 the first build. Write it into each version's `package.json` and keep it for every later render.
 ```bash
-cd hf/A && npx --yes hyperframes@<pin> check                        # 0 errors (last-line line_unread is expected)
-npx --yes hyperframes@<pin> snapshot --at <hook>,<each block cut>,<each scene mid>   # LOOK at the contact sheet
-npx --yes hyperframes@<pin> render -q delivery -o ../../out/final-A.mp4
-python3 <skill>/scripts/vocheck.py hf/A/index.html out/final-A.mp4  # must print ✓ (python with numpy)
-ffmpeg -nostats -i out/final-A.mp4 -af ebur128 -f null - 2>&1 | grep ' I:' | tail -1   # ≈ his voice level
+cd hf/A && npx --yes hyperframes@<pin> check                        # 0 errors (line_unread and outside_safe_zone warnings are expected)
+npx --yes hyperframes@<pin> snapshot --at <hook>,<each block cut>,<each scene mid> --no-end -o ../../out/snapA   # LOOK at the contact sheet
+```
+**Render in parallel, one subagent per version** (he asked, Nov 2026): dispatch A, B and C at once. Each subagent
+runs, from its version folder:
+```bash
+npx --yes hyperframes@<pin> render -q delivery -o ../../out/final-<V>.mp4
+ls -la ../../out/final-<V>.mp4; ffprobe -v error -show_entries format=duration -of csv=p=0 ../../out/final-<V>.mp4   # exists, full length
+cd ../.. && /usr/bin/python3 <skill>/scripts/vocheck.py hf/<V>/index.html out/final-<V>.mp4   # must print ✓ (needs numpy: the system python has it, Homebrew's may not)
+```
+A render can print "Render complete" and exit 0 yet leave no file, so the subagent checks that the file exists and
+reports its length and the vocheck line. When all three have reported, the main session runs:
+```bash
+ffmpeg -nostats -i out/final-A.mp4 -af ebur128 -f null - 2>&1 | grep ' I:' | tail -1   # the mix; report it, it is not the voice proof (see below)
 bash <skill>/scripts/deliver.sh .                                     # finals next to the source
 ```
+The mix's integrated LUFS reads a few dB above `vo.mp4` once clips and SFX are in, so it does not prove his voice is
+untouched. Pick one voiceover clip with no SFX, clip or b-roll over it; its `data-media-start` is the time in `vo.mp4` and its
+`data-start` the time in the render. Run `ffmpeg -ss <t> -t <len> -i <file> -af volumedetect -f null -` on both: the
+`mean_volume` values must agree within 0.2 dB.
 **Show him:** the three files, one line each on how they differ, and their lengths. **STOP until he approves**, or
 apply his notes and re-verify.
 
 ## Gate 3: the cover
 
-After approval only. Follow **9k-reel-cover** (installed locally it may be named `reel-cover-generator`):
+After approval only (he may approve by asking for the cover). **The cover always runs in its own subagent** (he
+asked, Nov 2026), which follows **9k-reel-cover** (installed locally it may be named `reel-cover-generator`). The
+subagent cannot ask him, so it picks the title, subtitle and tag itself and reports two alternatives he can swap in.
+Brief it with what the reel says, the hooks the versions open on, and the source paths:
 - Pick one sharp raw frame and have Codex relight it into the 9k theme. All text is typeset; the AI draws none.
-- Title in his language, two lines, with green words in `[ ]`.
+- Title in his language, two lines, with green words in `[ ]`. Wrap Latin text that starts with a symbol
+  (`/insights`, `~/.claude`) in U+2066…U+2069 (LTR isolate), or right-to-left order turns it into `insights/`.
 - Work in `<project>/cover/`, then save the final as `cover/cover.png` and run `deliver.sh` again.
+- The subagent stays out of `hf/`, `work/` and `out/final-*`, and runs `deliver.sh` only if all three finals exist.
 
 With the cover, offer a short post caption: 1–2 Arabic lines plus 2–4 hashtags.
 
@@ -124,6 +168,7 @@ With the cover, offer a short post caption: 1–2 Arabic lines plus 2–4 hashta
 |---|---|
 | trims the cut again (cut-review or in words) | `read-cut.mjs`, `recut.mjs`, then `node build.mjs`, which remaps every time onto the new cut. Fix caption lines that lost words (`VO_FIX`), then check, snapshot the cut beats, render, `vocheck.py`, `deliver.sh` |
 | edited a version in Studio / the HyperFrames desktop app | run `npx hyperframes catch-up` in that version folder and read `.hyperframes/backup/`. Put his edit into `build.mjs` **before** the next `node build.mjs`, which overwrites the version |
+| asks to mirror a version | `mirror: true` on that variant flips only his footage (`scaleX(-1)` on the voiceover clips). B-roll, clips, captions and graphics stay as they are. Then `node build.mjs <V>`, check, render, `vocheck.py`, `deliver.sh . <V>`, and tell him which burned-in text now reads backwards (mic logo, keyboard) |
 | has a Studio tab open while you regenerate | it can save its stale copy over yours. Hash the files after building, and re-check before rendering |
 | asks to render again | first check whether anything changed since the last render (file times, `catch-up`). If nothing did, say so |
 
@@ -135,12 +180,18 @@ With the cover, offer a short post caption: 1–2 Arabic lines plus 2–4 hashta
 | "I'll show a segment table and he edits cut.json" | He corrects the cut by dragging clips in Studio. Give him `hf/cut-review` |
 | "Normalize to −14 LUFS / speed him up a little" | His voice stays as recorded. Only reference clips get gain and 1.2x |
 | "The reference clip is just context, not in the reel" | In a reaction reel, the reference clips are the hook and the B-roll |
+| "There's no reference video, so the three-version table doesn't apply" | It does: full story, punchline first, the short one. `references/build.md` → "A talk with b-roll" |
+| "The b-roll is finished, I'll lay it under his voice as it is" | Re-time it to his word times and keep a clear band for captions first |
 | "Three versions = same edit, different caption styles" | Different structure: hook, order, what's in |
 | "The snapshots look right, so the render is right" | Snapshots can't hear. A stale voiceover looks identical. `vocheck.py` on every render |
 | "I replaced vo.mp4 in shared/, the versions use it" | They are hard links to the old file. `recut.mjs` relinks; `vocheck.py` proves it |
 | "Keep v1, deliver this one as -v2" | One final per version. `deliver.sh` sends the old one to the Trash |
 | "Put the project in ~/films or an edit/ folder" | `<yymmdd>-<slug>/` inside the source folder, as the live project |
 | "Make the cover now while the versions render" | The cover comes after he approves the versions |
+| "I'll render A, B, C one after another here" | One subagent per version, in parallel. The cover gets its own subagent too |
+| "The render printed Render complete, so the file is there" | Check the file exists and its length before vocheck and deliver |
+| "It's a 60px caption, it wraps to two lines, fine" | One line per Arabic chunk, at 52px. `capwidth.mjs` proves it |
+| "The screen recording goes in as it is, full frame" | Crop it to the app window with `broll.py` so the UI is readable above the captions |
 | "Quick question about titles/structure before I cut" | No questions before gate 1. Decide; the gates are where he corrects |
 | "Regenerate to apply my fix" (after he used Studio) | `catch-up` first. Regenerating erases his edit |
 
@@ -152,7 +203,11 @@ With the cover, offer a short post caption: 1–2 Arabic lines plus 2–4 hashta
 | cut-review project | `node <skill>/scripts/cut-review.mjs` |
 | his trim → keep list | `node <skill>/scripts/read-cut.mjs` |
 | voiceover from keep | `node <skill>/scripts/recut.mjs` |
-| build versions | `cd hf && node build.mjs` (from `templates/build.example.mjs`) |
-| audio proof | `python3 <skill>/scripts/vocheck.py hf/A/index.html out/final-A.mp4` |
+| screen recording → b-roll | `/usr/bin/python3 <skill>/scripts/broll.py <rec> <in> <out> <rate> hf/shared/assets/br-<name>.mp4 [skip]` |
+| build versions | `cd hf && node build.mjs` (from `templates/build.example.mjs` or `build.broll.mjs`) |
+| one-line captions | `node <skill>/scripts/capwidth.mjs` |
+| render | one subagent per version, in parallel |
+| audio proof | `/usr/bin/python3 <skill>/scripts/vocheck.py hf/A/index.html out/final-A.mp4` |
 | deliver | `bash <skill>/scripts/deliver.sh .` |
-| cover | 9k-reel-cover → `cover/cover.png` → `deliver.sh` |
+| cover | its own subagent: 9k-reel-cover → `cover/cover.png` → `deliver.sh` |
+| frames of any video | `ffmpeg -i <v> -vf "fps=1/4,scale=240:-2,tile=7x3" -frames:v 1 sheet.png` (9k-montage `lib/sheet.mjs` can exit silently with no file) |
