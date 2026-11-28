@@ -82,7 +82,7 @@ the top panel for most of the film, so the layout changes:
 |---|---|---|---|
 | Opens on | a quoted clip, or his first line with the hook stamp | his funniest or sharpest line from later in the take | him to camera, the title typed above his head |
 | Content | everything, in order | the lesson after the cold open; drop one aside; end on the thesis | the lesson and the turn only |
-| Look | punch 1.06 | punch 1.10 | punch 1.06; not mirrored unless he asks |
+| Look | punch 1.06 | punch 1.10 | punch 1.06; his footage mirrored (always) |
 
 Every version opens with the `9k-hook-stamp` block: under the clip when a clip opens the film, above his head
 (top ≈ 250) when he does. Start from `templates/build.broll.mjs`: each block item takes a layout flag (`broll`,

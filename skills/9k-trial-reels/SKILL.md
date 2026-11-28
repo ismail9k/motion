@@ -113,6 +113,8 @@ table into `docs/plan.md`. It is a record, not an extra gate: build straight awa
 
 House rules for every version:
 - **His voice stays exactly as recorded:** no normalizing, denoising, compression or speed change.
+- **Version C is always mirrored** (he asked, Nov 2026): `mirror: true` on C flips only his footage. B-roll, reference
+  clips, cards, captions and graphics stay unflipped. Tell him which burned-in text in his shot reads backwards (mic logo).
 - **Reference clips:** play at 1.2x with pitch preserved, with plain gain to ≈ −19.5 LUFS.
 - **Sound:** SFX sit 8–14 dB under the voice. No music. No end card: the film ends on his last word.
 - **Captions:** the whole Arabic chunk shows dimmed (opacity .38) and each word goes to full as he says it, never hidden; the orange keyword pill appears on its word. Plus one English line per sentence. Each Arabic chunk sits on **one line** at 52px (`nowrap`, stack inset 60 px): run `node <skill>/scripts/capwidth.mjs` after every build and shorten any line it flags. They stay inside

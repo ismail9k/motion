@@ -92,7 +92,7 @@ const VARIANTS = {
   B: { punch: 1.10, hook: { line: 'خلّي Claude يغلط أقل', d: 3.4 }, items: [vo('h2'), vo('open', { broll: 1 }), vo('report', { broll: 1 }),
     vo('gem', { band: 1 }), vo('prompt', { card: 1 }), vo('md', { broll: 1 }), vo('session', { tags: 1 }), vo('skill', { split: 1 }), vo('cta', { tags: 1 })] },
   // C: the short one. Straight to the command with a typed title, the lesson, one line of the skill, the CTA.
-  C: { punch: 1.06, hook: { line: 'أهم أمر في Claude Code', d: 2.2 }, items: [vo('open'), vo('report', { broll: 1 }), vo('gem', { band: 1 }),
+  C: { punch: 1.06, mirror: true, hook: { line: 'أهم أمر في Claude Code', d: 2.2 }, items: [vo('open'), vo('report', { broll: 1 }), vo('gem', { band: 1 }),
     vo('prompt', { card: 1 }), vo('md', { broll: 1 }), vo('session', { tags: 1 }), vo('skillShort', { tags: 1 }), vo('cta', { tags: 1 })] },
 };
 
